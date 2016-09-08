@@ -1,0 +1,55 @@
+body {
+  font-family: "Helvetica Neue-Light","Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif;
+  font-weight: 300;
+  background-color: #056bab;
+}
+#appdevgui-home-component {
+    display: block;
+    width: 600px;
+    height: 400px;
+    background-color: white;
+    border-radius: 20px 20px 20px 20px;
+    padding: 30px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.page-header { 
+    margin-top: 0; 
+    margin-bottom: 30px; 
+    border-bottom: 2px #999999 solid; 
+    padding-bottom:5px; }
+.clear { 
+    clear:both; 
+}
+.text-center { 
+    text-align: center; 
+}
+#appdevgui-side-component {
+    display: block;
+    margin: 0;
+    height: 300px;
+    width: 250px;
+    background-color: white;
+    float: left;
+}
+.side-menu-list a { 
+    text-decoration: none; 
+    color: #333333; 
+    display: block; 
+}
+#appdevgui-installer-component {
+    display: block;
+    margin: 0;
+    width: 350px;
+    background-color: white;
+    height: 300px;
+    float: left;
+}
+#appdevgui-installer { 
+    margin: 0 auto; 
+    width: 350px; 
+    text-align: center;
+    height: 300px;
+}
