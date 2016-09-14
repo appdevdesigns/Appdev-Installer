@@ -12,7 +12,8 @@
 					
 					node_version_spawn.stdout.on('data', (data) => {
 						console.log(`stdout: ${data}`);
-			            $$('installer-log').setValue(`${data}`);
+			            $$('installer-log').setValue("Current Node Version: " + `${data}`);
+			            sails_version();
 					});
 
 					node_version_spawn.stderr.on('data', (data) => {
@@ -24,36 +25,72 @@
 					});  
 				}
 
+				function sails_version () {
+					console.log('Check Sails version');
+					const sails_version_exec = require('child_process').exec;
+					sails_version_exec('sails -v', (error, stdout, stderr) => {
+					  if (error) {
+					    console.warn("This machine doesn't have Sails");
+					    $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
+			            install_sails();
+					    return;
+					  }
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "Current Sails Version: " + `${stdout}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
+			          install_sails();
+					});
+				}
+
 				function install_sails () {
-					console.log('install sails');
-					webix.message("Installing sails");
+					console.log('Install Sails');
+					webix.message("Installing Sails");
 					const install_sails_exec = require('child_process').exec;
 					install_sails_exec('echo "kiragames2016" | sudo -S npm install sails -g', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue(`${error}`);
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:<br />" +`${error}`);
 					    return;
 					  }
-					  console.log(`stdout: ${stdout}`);
-					  console.log(`stderr: ${stderr}`);
-					  $$('installer-log').setValue(`${stdout}`);
-					  install_appdevdesigns();
+					  //console.log(`stdout: ${stdout}`);
+					  //console.log(`stderr: ${stderr}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
+					  appdevdesigns_version();
+					});
+				}
+
+				function appdevdesigns_version () {
+					console.log('Check Appdev-designs version');
+					const appdevdesigns_version_exec = require('child_process').exec;
+					appdevdesigns_version_exec('appdev -V', (error, stdout, stderr) => {
+					  if (error) {
+					    console.warn("This machine doesn't have Appdev-designs");
+					    $$('installer-log').setValue($$('installer-log').getValue() + "\nNew installing Appdev-designs latest version...");
+			            install_appdevdesigns();
+					    return;
+					  }
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+			          $$('installer-log').setValue($$('installer-log').getValue() + "\nCurrent Appdev-designs Version: " + `${stdout}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "Update Appdev-designs to latest version...");
+			          install_appdevdesigns();
 					});
 				}
 
 				function install_appdevdesigns () {
-					console.log('install appdev-design');
-					webix.message("Installing appdev-design");
+					console.log('install Appdev-designs');
+					webix.message("Installing Appdev-designs");
 					const install_appdevdesigns_exec = require('child_process').exec;
 					install_appdevdesigns_exec('echo "kiragames2016" | sudo -S npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
-					  $$('installer-log').setValue(`${error}`);
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:<br />" +`${error}`);
 					    return;
 					  }
-					  console.log(`stdout: ${stdout}`);
-					  console.log(`stderr: ${stderr}`);
-					  $$('installer-log').setValue(`${stdout}`);
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
 					  webix.message("Installing appdev-design complete");
 					});
 				}
@@ -116,8 +153,10 @@
 			              	webix.message("Installing Component"); 
 			              	$$('installer-button').hide();
 			              	$$('installer-log').show();
-			              	node_version();
-			              	install_sails();
+			              	$$('installer-log').disable();
+			              	setTimeout(function() {
+				              	node_version();
+			              	}, 1000);
 			            }
 			          }
 			        });
