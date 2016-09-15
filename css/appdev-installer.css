@@ -39,7 +39,33 @@ body {
     color: #333333; 
     display: block; 
 }
-#appdevgui-installer-component {
+
+#appdevgui-installer { 
+    margin: 0 auto; 
+    width: 350px; 
+    text-align: center;
+    height: 300px;
+}
+#installer-input {
+    border:1px solid #333333;
+}
+
+#appdevgui-language { 
+    margin: 10px auto; 
+    width: 300px; 
+    text-align: center; 
+    height:203px; 
+}
+.language-label { 
+    margin: 0 0 30px 0; 
+    font-size: 24px; 
+    font-weight: bold; 
+    color:#666666; 
+} 
+
+/*Shared CSS*/
+
+.component {
     display: block;
     margin: 0;
     width: 350px;
@@ -47,9 +73,12 @@ body {
     height: 300px;
     float: left;
 }
-#appdevgui-installer { 
-    margin: 0 auto; 
-    width: 350px; 
-    text-align: center;
-    height: 300px;
+.hidden {
+    display: none;
+}
+.view-form {
+    border: none;
+}
+.next-btn { 
+    margin-top: 20px; 
 }

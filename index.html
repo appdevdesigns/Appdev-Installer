@@ -5,7 +5,50 @@
 			<link rel="stylesheet" href="modules/webix/webix.css" type="text/css">
 			<link rel="stylesheet" href="css/appdev-installer.css" type="text/css"> 
 			<script src="modules/webix/webix.js" type="text/javascript"></script>
+			<script src="js/jquery-3.1.0.min.js" type="text/javascript"></script>
 			<script type="text/javascript">
+				var rootPassword = "";
+				var language_selected = ""
+				var application_name = "";
+				$(function(){
+					hide_all_component();
+					update_page(1);
+				});
+				function update_page(itemid) {
+					var id = parseInt(itemid);
+					hide_all_component();
+			        $$('side-menu').select(id);
+					switch (id) {
+						case 1:
+							$("#appdevgui-language-component").show();
+							break;
+						case 2:
+							$("#appdevgui-profile-component").show();
+							break;
+						case 3:
+							$("#appdevgui-verifyreq-component").show();
+							break;
+						case 4:
+							$("#appdevgui-dbconfig-component").show();
+							break;
+						case 5:
+							$("#appdevgui-siteconfig-component").show();
+							break;
+						case 6:
+							$("#appdevgui-installer-component").show();
+							$$('installer-input').focus();
+							break;
+						default:
+							console.error("Bad component index");
+							// statements_def
+							break;
+					}
+				}
+
+				function hide_all_component() {
+					$('.component').hide();
+				}
+
 				function node_version () {
 					const spawn = require('child_process').spawn;
 					const node_version_spawn = spawn('node', ['-v', '/usr']);
@@ -47,7 +90,7 @@
 					console.log('Install Sails');
 					webix.message("Installing Sails");
 					const install_sails_exec = require('child_process').exec;
-					install_sails_exec('echo "kiragames2016" | sudo -S npm install sails -g', (error, stdout, stderr) => {
+					install_sails_exec('echo ' + rootPassword + ' | sudo -S npm install sails -g', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
 					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:<br />" +`${error}`);
@@ -82,7 +125,7 @@
 					console.log('install Appdev-designs');
 					webix.message("Installing Appdev-designs");
 					const install_appdevdesigns_exec = require('child_process').exec;
-					install_appdevdesigns_exec('echo "kiragames2016" | sudo -S npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
+					install_appdevdesigns_exec('echo ' + rootPassword + ' | sudo -S npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
 					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:<br />" +`${error}`);
@@ -109,7 +152,7 @@
 			          view:"list",
 			          id:"side-menu",
 			          width:200,
-			          height:203,
+			          height:204,
 			          container:"appdevgui-side",
 			          template:"#title#",
 			          select:true,
@@ -126,12 +169,145 @@
 			        });
 			        $$('side-menu').attachEvent("onItemClick", function(id, e, node){
 			            var item = this.getItem(id);
+			            // webix.message(id);
+			            update_page(id);
 			        });
-			        $$('side-menu').select(6);
 			      </script>
 			    </div>
 		    </div>
-		    <div id="appdevgui-installer-component">
+		    <div id="appdevgui-language-component" class="component hidden">
+		    	<div id="appdevgui-language">
+			      <div class="language-label">
+			        Choose language
+			      </div>
+			      <script type="text/javascript" charset="utf-8">
+			        webix.ui({
+			          view:"combo",
+			          id:"language-combo",
+			          container:"appdevgui-language",
+			          value:1, //the initially selected one
+			          width: 300,
+			          options:[ 
+			              { id:1, value:"English"}, 
+			              { id:2, value:"English" }, 
+			              { id:3, value:"English" }
+			          ]
+			        });
+			        webix.ui({
+			          view:"button",
+			          css:"language-next",
+			          container:"appdevgui-language",
+			          width: 300,
+			          type: "next",
+			          label: "Next",
+			          on:{
+			            "onItemClick": function(id, e, trg) {
+			              language_selected = $$('language-combo').getValue();
+			              update_page(2);
+			            }
+			          }
+			        });
+			      </script>
+			    </div>
+		    </div>
+		    <div id="appdevgui-profile-component" class="component hidden">
+		    	<div id="appdevgui-profile">
+			      <script type="text/javascript" charset="utf-8">
+			      webix.ui({
+			      		view:"form",
+			      		css:"view-form",
+			      		container: "appdevgui-profile",
+			      		id:"profile-form",
+			      		elements:[{
+						      		view: "text", 
+						      		height: 60,
+						      		width: 300,
+						      		id: "profile-input",
+						      		name: "profile-input",
+						      		labelPosition: "top",
+						      		label: "Application name",
+						      		require:true
+						      	  },
+						      	  {
+							        view:"button",
+							        css:"next-btn",
+							        container:"appdevgui-profile",
+							        width: 300,
+							        type: "next",
+							        label: "Next",
+							        on:{
+							          "onItemClick": function(id, e, trg) {
+							          	application_name = $$('profile-input').getValue();
+							            update_page(3);
+							          }
+							        }
+							      }
+				      			],
+				      	rules: {
+				      		"installer-input":webix.rules.isNotEmpty
+				      	}
+			      	});
+			      </script>
+			    </div>
+		    </div>
+		    <div id="appdevgui-verifyreq-component" class="component hidden">
+		    	<div id="appdevgui-verifyreq">
+			      <script type="text/javascript" charset="utf-8">
+			        webix.ui({
+			          view:"button",
+			          css:".next-btn",
+			          container:"appdevgui-verifyreq",
+			          width: 300,
+			          type: "next",
+			          label: "Next",
+			          on:{
+			            "onItemClick": function(id, e, trg) {
+			              update_page(4);
+			            }
+			          }
+			        });
+			      </script>
+			    </div>
+		    </div>
+		    <div id="appdevgui-dbconfig-component" class="component hidden">
+		    	<div id="appdevgui-dbconfig">
+			      <script type="text/javascript" charset="utf-8">
+			        webix.ui({
+			          view:"button",
+			          css:".next-btn",
+			          container:"appdevgui-dbconfig",
+			          width: 300,
+			          type: "next",
+			          label: "Next",
+			          on:{
+			            "onItemClick": function(id, e, trg) {
+			              update_page(5);
+			            }
+			          }
+			        });
+			      </script>
+			    </div>
+		    </div>
+		    <div id="appdevgui-siteconfig-component" class="component hidden">
+		    	<div id="appdevgui-siteconfig">			      
+		    	<script type="text/javascript" charset="utf-8">
+			        webix.ui({
+			          view:"button",
+			          css:".next-btn",
+			          container:"appdevgui-siteconfig",
+			          width: 300,
+			          type: "next",
+			          label: "Next",
+			          on:{
+			            "onItemClick": function(id, e, trg) {
+			              update_page(6);
+			            }
+			          }
+			        });
+			      </script>
+			    </div>
+		    </div>
+		    <div id="appdevgui-installer-component" class="component hidden">
 			    <div id="appdevgui-installer">
 			      <script type="text/javascript" charset="utf-8">
 			      	webix.ui({
@@ -142,24 +318,49 @@
 			      		hidden: true,
 			      		id: "installer-log"
 			      	});
-			        webix.ui({
-			          view:"button",
-			          container:"appdevgui-installer",
-			          width: 200,
-			          label: "Install",
-			          id: "installer-button",
-			          on:{
-			            "onItemClick": function(id, e, trg) {
-			              	webix.message("Installing Component"); 
-			              	$$('installer-button').hide();
-			              	$$('installer-log').show();
-			              	$$('installer-log').disable();
-			              	setTimeout(function() {
-				              	node_version();
-			              	}, 1000);
-			            }
-			          }
-			        });
+			      	webix.ui({
+			      		view:"form",
+			      		css:"view-form",
+			      		container: "appdevgui-installer",
+			      		id:"installer-form",
+			      		elements:[{
+						      		view: "text", 
+						      		height: 60,
+						      		width: 300,
+						      		id: "installer-input",
+						      		name: "installer-input",
+						      		labelPosition: "top",
+						      		label: "Root password",
+						      		require:true
+						      	  },
+						      	  {
+							        view:"button",
+							        width: 200,
+							        label: "Install",
+							        id: "installer-button",
+							        on:{
+							          "onItemClick": function(id, e, trg) {
+							          	var form = this.getParentView();
+										if (form.validate()) {
+											webix.message("Installing Component");
+											rootPassword = $$('installer-input').getValue();
+									        $$('installer-form').hide();
+									    	$$('installer-log').show();
+							            	$$('installer-log').disable();
+							            	setTimeout(function() {
+								            	node_version();
+							            	}, 1000);
+							            } else { 
+											webix.message({ type:"error", text:"Root password must not empty" });
+										}
+							          }
+							        }
+							      }
+				      			 ],
+				      	rules: {
+				      		"installer-input":webix.rules.isNotEmpty
+				      	}
+			      	});
 			      </script>
 			    </div>
 		    </div>
