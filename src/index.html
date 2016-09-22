@@ -50,30 +50,58 @@
 				}
 
 				function node_version () {
-					const spawn = require('child_process').spawn;
-					const node_version_spawn = spawn('node', ['-v', '/usr']);
-					
-					node_version_spawn.stdout.on('data', (data) => {
-						console.log(`stdout: ${data}`);
-			            $$('installer-log').setValue("Current Node Version: " + `${data}`);
-			            sails_version();
+					console.log('Check Node version');
+					const node_version_exec = require('child_process').exec;
+					node_version_exec('/usr/local/bin/node -v', (error, stdout, stderr) => {
+					  if (error) {
+					    console.warn("Node Version Error");
+			            $$('installer-log').setValue("Node Version Error\n");
+			            // brew_install();
+					    return;
+					  }
+			          $$('installer-log').setValue("Current Node Version: " + `${stdout}`);
+			          sails_version();
 					});
+				}
 
-					node_version_spawn.stderr.on('data', (data) => {
-						console.log(`stderr: ${data}`);
+				function brew_install() {
+					const brew_command_exec = require('child_process').exec;
+			            $$('installer-log').setValue($$('installer-log').getValue() + "Installing Brew! Please wait");
+					brew_command_exec('/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"', (error, stdout, stderr) => {
+					  if (error) {
+			            $$('installer-log').setValue($$('installer-log').getValue() + "Error: " + `${error}`);
+					    return;
+					  }
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "New installing Brew latest version...");
+					  // $$('installer-log').setValue($$('installer-log').getValue() + "Output: " + `${stdout}`);
+					  node_install();
 					});
+				}
 
-					node_version_spawn.on('close', (code) => {
-						console.log(`child process exited with code ${code}`);
-					});  
+				function node_install() {
+					const node_install = require('child_process').exec;
+					node_install_exec('brew install node', (error, stdout, stderr) => {
+					  if (error) {
+			            $$('installer-log').setValue($$('installer-log').getValue() + "Error: " + `${error}`);
+					    return;
+					  }
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "New installing Node latest version...");
+					  // $$('installer-log').setValue($$('installer-log').getValue() + "Output: " + `${stdout}`);
+					  sails_version();
+					});
 				}
 
 				function sails_version () {
 					console.log('Check Sails version');
 					const sails_version_exec = require('child_process').exec;
-					sails_version_exec('sails -v', (error, stdout, stderr) => {
+					sails_version_exec('echo ' + rootPassword + ' | sudo -S /usr/local/bin/node /usr/local/bin/sails -v', (error, stdout, stderr) => {
 					  if (error) {
 					    console.warn("This machine doesn't have Sails");
+			            $$('installer-log').setValue($$('installer-log').getValue() + "This machine doesn't have Sails\n");
 					    $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
 			            install_sails();
 					    return;
@@ -90,14 +118,15 @@
 					console.log('Install Sails');
 					webix.message("Installing Sails");
 					const install_sails_exec = require('child_process').exec;
-					install_sails_exec('echo ' + rootPassword + ' | sudo -S npm install sails -g', (error, stdout, stderr) => {
+					install_sails_exec('echo ' + rootPassword + ' | sudo -S /usr/local/bin/node /usr/local/bin/npm install sails -g', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:<br />" +`${error}`);
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
 					    return;
 					  }
 					  //console.log(`stdout: ${stdout}`);
 					  //console.log(`stderr: ${stderr}`);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
 					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
 					  appdevdesigns_version();
 					});
@@ -106,9 +135,10 @@
 				function appdevdesigns_version () {
 					console.log('Check Appdev-designs version');
 					const appdevdesigns_version_exec = require('child_process').exec;
-					appdevdesigns_version_exec('appdev -V', (error, stdout, stderr) => {
+					appdevdesigns_version_exec('/usr/local/bin/node /usr/local/bin/appdev -V', (error, stdout, stderr) => {
 					  if (error) {
 					    console.warn("This machine doesn't have Appdev-designs");
+			            $$('installer-log').setValue($$('installer-log').getValue() + "This machine doesn't have Appdev-designs\n");
 					    $$('installer-log').setValue($$('installer-log').getValue() + "\nNew installing Appdev-designs latest version...");
 			            install_appdevdesigns();
 					    return;
@@ -125,14 +155,15 @@
 					console.log('install Appdev-designs');
 					webix.message("Installing Appdev-designs");
 					const install_appdevdesigns_exec = require('child_process').exec;
-					install_appdevdesigns_exec('echo ' + rootPassword + ' | sudo -S npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
+					install_appdevdesigns_exec('echo ' + rootPassword + ' | sudo -S /usr/local/bin/node /usr/local/bin/npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:<br />" +`${error}`);
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
 					    return;
 					  }
 					  // console.log(`stdout: ${stdout}`);
 					  // console.log(`stderr: ${stderr}`);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
 					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
 					  webix.message("Installing appdev-design complete");
 					});
@@ -349,6 +380,8 @@
 							            	$$('installer-log').disable();
 							            	setTimeout(function() {
 								            	node_version();
+								            	// sails_version();
+								            	// test_command();
 							            	}, 1000);
 							            } else { 
 											webix.message({ type:"error", text:"Root password must not empty" });
