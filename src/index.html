@@ -7,9 +7,27 @@
 			<script src="modules/webix/webix.js" type="text/javascript"></script>
 			<script src="js/jquery-3.1.0.min.js" type="text/javascript"></script>
 			<script type="text/javascript">
+				//GLOBAL
+				var language_selected = "";
+
+				var profile_install = "";
+				var mysql_optional = "";
+				var directory_profile = "";
+				var folder_name = "";
+
+				var needGit = false;
+				var needNode = false;
+				var needSails = false;
+				var needAppdev = false;
+
+				var database_name = "";
+				var database_root = "";
+				var database_password = "";
+				var database_port = "";
+				var database_host = "";
+
 				var rootPassword = "";
-				var language_selected = ""
-				var application_name = "";
+
 				$(function(){
 					hide_all_component();
 					update_page(1);
@@ -27,6 +45,9 @@
 							break;
 						case 3:
 							$("#appdevgui-verifyreq-component").show();
+							setTimeout(function() {
+								node_version();
+							}, 1000);
 							break;
 						case 4:
 							$("#appdevgui-dbconfig-component").show();
@@ -55,62 +76,93 @@
 					node_version_exec('/usr/local/bin/node -v', (error, stdout, stderr) => {
 					  if (error) {
 					    console.warn("Node Version Error");
-			            $$('installer-log').setValue("Node Version Error\n");
+			            $$('req-node').setValue("No Node installed");
 			            // brew_install();
+			            needNode = true;
+			            git_version();
 					    return;
 					  }
-			          $$('installer-log').setValue("Current Node Version: " + `${stdout}`);
+			          $$('req-node').setValue(`${stdout}`);
+			          needNode = false;
+			          git_version();
+					});
+				}
+
+				// function brew_install() {
+				// 	const brew_command_exec = require('child_process').exec;
+			 //            $$('installer-log').setValue($$('installer-log').getValue() + "Installing Brew! Please wait");
+				// 	brew_command_exec('/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"', (error, stdout, stderr) => {
+				// 	  if (error) {
+			 //            $$('installer-log').setValue($$('installer-log').getValue() + "Error: " + `${error}`);
+				// 	    return;
+				// 	  }
+				// 	  // console.log(`stdout: ${stdout}`);
+				// 	  // console.log(`stderr: ${stderr}`);
+				// 	  $$('installer-log').setValue($$('installer-log').getValue() + "New installing Brew latest version...");
+				// 	  // $$('installer-log').setValue($$('installer-log').getValue() + "Output: " + `${stdout}`);
+				// 	  node_install();
+				// 	});
+				// }
+
+				// function node_install() {
+				// 	const node_install = require('child_process').exec;
+				// 	node_install_exec('brew install node', (error, stdout, stderr) => {
+				// 	  if (error) {
+			 //            $$('installer-log').setValue($$('installer-log').getValue() + "Error: " + `${error}`);
+				// 	    return;
+				// 	  }
+				// 	  // console.log(`stdout: ${stdout}`);
+				// 	  // console.log(`stderr: ${stderr}`);
+				// 	  $$('installer-log').setValue($$('installer-log').getValue() + "New installing Node latest version...");
+				// 	  // $$('installer-log').setValue($$('installer-log').getValue() + "Output: " + `${stdout}`);
+				// 	  sails_version();
+				// 	});
+				// }
+
+				function git_version () {
+					console.log('Check Git version');
+					const git_version_exec = require('child_process').exec;
+					git_version_exec('git --version', (error, stdout, stderr) => {
+					  if (error) {
+					    console.warn("This machine doesn't have Git");
+			            $$('req-git').setValue("No Git installed");
+					    // $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
+			            //install_sails();
+			          	needGit = true;
+			          	sails_version();
+					    return;
+					  }
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  $$('req-git').setValue(`${stdout}`);
+					  // $$('req-sails').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
+			          //install_sails();
+			          needGit = true;
 			          sails_version();
 					});
 				}
 
-				function brew_install() {
-					const brew_command_exec = require('child_process').exec;
-			            $$('installer-log').setValue($$('installer-log').getValue() + "Installing Brew! Please wait");
-					brew_command_exec('/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"', (error, stdout, stderr) => {
-					  if (error) {
-			            $$('installer-log').setValue($$('installer-log').getValue() + "Error: " + `${error}`);
-					    return;
-					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "New installing Brew latest version...");
-					  // $$('installer-log').setValue($$('installer-log').getValue() + "Output: " + `${stdout}`);
-					  node_install();
-					});
-				}
-
-				function node_install() {
-					const node_install = require('child_process').exec;
-					node_install_exec('brew install node', (error, stdout, stderr) => {
-					  if (error) {
-			            $$('installer-log').setValue($$('installer-log').getValue() + "Error: " + `${error}`);
-					    return;
-					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "New installing Node latest version...");
-					  // $$('installer-log').setValue($$('installer-log').getValue() + "Output: " + `${stdout}`);
-					  sails_version();
-					});
-				}
 
 				function sails_version () {
 					console.log('Check Sails version');
 					const sails_version_exec = require('child_process').exec;
-					sails_version_exec('echo ' + rootPassword + ' | sudo -S /usr/local/bin/node /usr/local/bin/sails -v', (error, stdout, stderr) => {
+					sails_version_exec('/usr/local/bin/node /usr/local/bin/sails -v', (error, stdout, stderr) => {
 					  if (error) {
 					    console.warn("This machine doesn't have Sails");
-			            $$('installer-log').setValue($$('installer-log').getValue() + "This machine doesn't have Sails\n");
-					    $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
-			            install_sails();
+			            $$('req-sails').setValue("No SailsJS installed");
+					    // $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
+			            //install_sails();
+			          	needSails = true;
+			          	appdevdesigns_version();
 					    return;
 					  }
 					  // console.log(`stdout: ${stdout}`);
 					  // console.log(`stderr: ${stderr}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "Current Sails Version: " + `${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
-			          install_sails();
+					  $$('req-sails').setValue(`${stdout}`);
+					  // $$('req-sails').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
+			          //install_sails();
+			          needSails = true;
+			          appdevdesigns_version();
 					});
 				}
 
@@ -138,16 +190,20 @@
 					appdevdesigns_version_exec('/usr/local/bin/node /usr/local/bin/appdev -V', (error, stdout, stderr) => {
 					  if (error) {
 					    console.warn("This machine doesn't have Appdev-designs");
-			            $$('installer-log').setValue($$('installer-log').getValue() + "This machine doesn't have Appdev-designs\n");
-					    $$('installer-log').setValue($$('installer-log').getValue() + "\nNew installing Appdev-designs latest version...");
-			            install_appdevdesigns();
+			            $$('req-appdev').setValue("No Appdev-designs installed");
+					    // $$('installer-log').setValue($$('installer-log').getValue() + "\nNew installing Appdev-designs latest version...");
+			            // install_appdevdesigns();
+			            needAppdev = true;
+			            $$('verifyreq-next').enable();
 					    return;
 					  }
 					  // console.log(`stdout: ${stdout}`);
 					  // console.log(`stderr: ${stderr}`);
-			          $$('installer-log').setValue($$('installer-log').getValue() + "\nCurrent Appdev-designs Version: " + `${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "Update Appdev-designs to latest version...");
-			          install_appdevdesigns();
+			          $$('req-appdev').setValue(`${stdout}`);
+			            needAppdev = true;
+					  // $$('installer-log').setValue($$('installer-log').getValue() + "Update Appdev-designs to latest version...");
+			          // install_appdevdesigns();
+			          $$('verifyreq-next').enable();
 					});
 				}
 
@@ -176,6 +232,14 @@
 			<h1 class="page-header text-center">
 				<br>Appdev GUI Cross-platform
 			</h1>
+			<script type="text/javascript" charset="utf-8">
+		    		webix.ui({
+			      		view: "textarea",
+			      		height: 400,
+			      		width: 600,
+			      		id: "debug-log"
+			      	});
+			</script>
 			<div id="appdevgui-side-component">
 		        <div id="appdevgui-side">
 			      <script type="text/javascript" charset="utf-8">
@@ -183,18 +247,19 @@
 			          view:"list",
 			          id:"side-menu",
 			          width:200,
-			          height:204,
+			          height:166,
 			          container:"appdevgui-side",
 			          template:"#title#",
 			          select:true,
-			          navigation: true,
+			          navigation:true,
+			          disabled:true,
 			          css:"side-menu-list",
 			          data:[
 			            { "id":1, "title":"Choose Language", "page":"#" },
 			            { "id":2, "title":"Choose Profile", "page":"#"  },
 			            { "id":3, "title":"Verify Requirements", "page":"#"  },
 			            { "id":4, "title":"Configure Database", "page":"#"  },
-			            { "id":5, "title":"Configure Site", "page":"#"  },
+			            // { "id":5, "title":"Configure Site", "page":"#"  },
 			            { "id":6, "title":"Finish", "page":"#"  }
 			          ]
 			        });
@@ -226,13 +291,13 @@
 			        });
 			        webix.ui({
 			          view:"button",
-			          css:"language-next",
+			          css:"next-btn",
 			          container:"appdevgui-language",
-			          width: 300,
+			          width: 200,
 			          type: "next",
 			          label: "Next",
 			          on:{
-			            "onItemClick": function(id, e, trg) {
+			           	"onItemClick": function(id, e, trg) {
 			              language_selected = $$('language-combo').getValue();
 			              update_page(2);
 			            }
@@ -249,73 +314,224 @@
 			      		css:"view-form",
 			      		container: "appdevgui-profile",
 			      		id:"profile-form",
-			      		elements:[{
+			      		elements:[{ 
+			      					view: "radio", 
+			      					name: "profile-radio",
+			      					id: "profile-radio",
+			      					label: "Choose Profile", 
+			      					value: 1,
+			      					height: 60,
+			      					css: "profile-radio", 
+			      					labelWidth: 150, 
+			      					options: [
+									  	{ value:"Default Install", id:1 },
+									  	{ value:"Custom Install", id:2 }],
+									on: {
+									  	"onItemClick": function(id, e, trg) {
+									  	var temp = $$('profile-radio').getValue();
+									  	switch (temp) {
+									  		case "1":
+									  			$$('profile-checkbox').hide();
+									  			$$('profile-checkbox').setValue(0);
+									  			$$('profile-input').disable();
+									  			$$('profile-input').setValue("/sails/");
+									  			break;
+									  		case "2":
+									  			$$('profile-checkbox').show();
+									  			$$('profile-input').enable();
+									  			$$('profile-input').focus();
+									  			break;
+									  		default:
+									  			// statements_def
+									  			break;
+									  	}
+									  }
+									}
+								  },
+			      				  {
+			      				  	view: "checkbox", 
+								    id: "profile-checkbox", 
+								    label: "MySql [Optional]", 
+			      					labelWidth: 150, 
+								    value: 0,
+								    hidden: true
+			      				  },
+			      				  {
 						      		view: "text", 
 						      		height: 60,
 						      		width: 300,
 						      		id: "profile-input",
 						      		name: "profile-input",
 						      		labelPosition: "top",
-						      		label: "Application name",
-						      		require:true
-						      	  },
-						      	  {
-							        view:"button",
-							        css:"next-btn",
-							        container:"appdevgui-profile",
-							        width: 300,
-							        type: "next",
-							        label: "Next",
-							        on:{
-							          "onItemClick": function(id, e, trg) {
-							          	application_name = $$('profile-input').getValue();
-							            update_page(3);
-							          }
-							        }
-							      }
+								    disabled: true,
+								    value: "/sails/",
+						      		label: "Appdev Directory"//,
+						      		// require:true
+						      	  }
 				      			],
 				      	rules: {
 				      		"installer-input":webix.rules.isNotEmpty
 				      	}
 			      	});
+					webix.ui({
+						view:"button",
+			          	css:"next-btn",
+			        	container:"appdevgui-profile",
+			       		width: 200,
+			       		type: "next",
+			       		label: "Next",
+			       		on:{
+							"onItemClick": function(id, e, trg) {
+							  	directory_profile = $$('profile-input').getValue();
+				           	  	profile_install = $$('profile-radio').getValue();
+							  	mysql_optional = $$('profile-checkbox').getValue();
+							  	// webix.message("Directory : " + directory_profile);
+							  	// webix.message("Profile : "+ profile_install);
+							  	// webix.message("Mysql : " + mysql_optional);
+							  	update_page(3);
+				        	}
+		      			}
+			        });
+			        webix.ui({
+			        	view:"button",
+						css:"back-btn",
+						container:"appdevgui-profile",
+						width: 200,
+						type: "prev",
+						label: "Back",
+						on:{
+							"onItemClick": function(id, e, trg) {
+							  	update_page(1);
+							}
+						}
+					});
 			      </script>
 			    </div>
 		    </div>
 		    <div id="appdevgui-verifyreq-component" class="component hidden">
 		    	<div id="appdevgui-verifyreq">
 			      <script type="text/javascript" charset="utf-8">
+			      	webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 320,
+				 		id: "req-node",
+			    		name: "req-node",
+				 		labelPosition: "left",
+						disabled: true,
+						label: "NodeJS :",
+			        	container:"appdevgui-verifyreq",
+			      		labelWidth: 80,
+			      		css: "verifyreq-input"
+					});
+					webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 320,
+				 		id: "req-git",
+			    		name: "req-git",
+				 		labelPosition: "left",
+						disabled: true,
+						label: "Git :",
+			        	container:"appdevgui-verifyreq",
+			      		labelWidth: 80, 
+			      		css: "verifyreq-input"
+					});
+					webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 320,
+				 		id: "req-sails",
+			    		name: "req-sails",
+				 		labelPosition: "left",
+						disabled: true,
+						label: "SailsJS :",
+			        	container:"appdevgui-verifyreq",
+			      		labelWidth: 80, 
+			      		css: "verifyreq-input"
+					});
+					webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 320,
+				 		id: "req-appdev",
+			    		name: "req-appdev",
+				 		labelPosition: "left",
+						disabled: true,
+						label: "Appdev-Designs :",
+			        	container:"appdevgui-verifyreq",
+			      		labelWidth: 130, 
+			      		css: "verifyreq-input"
+					});
 			        webix.ui({
-			          view:"button",
-			          css:".next-btn",
-			          container:"appdevgui-verifyreq",
-			          width: 300,
-			          type: "next",
-			          label: "Next",
-			          on:{
-			            "onItemClick": function(id, e, trg) {
-			              update_page(4);
-			            }
-			          }
+						view:"button",
+			          	css:"next-btn",
+			        	container:"appdevgui-verifyreq",
+			       		width: 200,
+			       		type: "next",
+			       		label: "Next",
+			       		disabled: true,
+			       		id:"verifyreq-next",
+			       		on:{
+							"onItemClick": function(id, e, trg) {
+					          update_page(4);
+				        	}
+		      			}
 			        });
+			        webix.ui({
+			        	view:"button",
+						css:"back-btn",
+						container:"appdevgui-verifyreq",
+						width: 200,
+						type: "prev",
+						label: "Back",
+						on:{
+							"onItemClick": function(id, e, trg) {
+							  update_page(2);
+							}
+						}
+					});
 			      </script>
 			    </div>
 		    </div>
 		    <div id="appdevgui-dbconfig-component" class="component hidden">
 		    	<div id="appdevgui-dbconfig">
 			      <script type="text/javascript" charset="utf-8">
+			      	webix.ui({
+			      		view: "textarea", 
+			          	container: "appdevgui-dbconfig",
+			      		height: 200,
+			      		width: 300,
+			      		labelPosition: "top",
+			      		label: "Database",
+			      		id: "dbinstaller-log"
+			      	});
 			        webix.ui({
 			          view:"button",
-			          css:".next-btn",
+			          css:"next-btn",
 			          container:"appdevgui-dbconfig",
-			          width: 300,
+			          width: 200,
 			          type: "next",
 			          label: "Next",
 			          on:{
 			            "onItemClick": function(id, e, trg) {
-			              update_page(5);
+			              update_page(6);
 			            }
 			          }
 			        });
+			        webix.ui({
+			        	view:"button",
+						css:"back-btn",
+						container:"appdevgui-dbconfig",
+						width: 200,
+						type: "prev",
+						label: "Back",
+						on:{
+							"onItemClick": function(id, e, trg) {
+							  update_page(3);
+							}
+						}
+					});
 			      </script>
 			    </div>
 		    </div>
@@ -324,9 +540,9 @@
 		    	<script type="text/javascript" charset="utf-8">
 			        webix.ui({
 			          view:"button",
-			          css:".next-btn",
+			          css:"next-btn",
 			          container:"appdevgui-siteconfig",
-			          width: 300,
+			          width: 200,
 			          type: "next",
 			          label: "Next",
 			          on:{
@@ -355,7 +571,8 @@
 			      		container: "appdevgui-installer",
 			      		id:"installer-form",
 			      		elements:[{
-						      		view: "text", 
+						      		view: "text",
+						      		type: "password",
 						      		height: 60,
 						      		width: 300,
 						      		id: "installer-input",
@@ -394,6 +611,19 @@
 				      		"installer-input":webix.rules.isNotEmpty
 				      	}
 			      	});
+			        webix.ui({
+			        	view:"button",
+						css:"back-btn",
+						container:"appdevgui-installer",
+						width: 200,
+						type: "prev",
+						label: "Back",
+						on:{
+							"onItemClick": function(id, e, trg) {
+							  update_page(4);
+							}
+						}
+					});
 			      </script>
 			    </div>
 		    </div>

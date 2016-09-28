@@ -34,15 +34,20 @@ body {
     background-color: white;
     float: left;
 }
+
 .side-menu-list a { 
     text-decoration: none; 
     color: #333333; 
     display: block; 
 }
+.side-menu-list div { 
+    color: black!important;
+    font-weight: bold!important;
+}
 
 #appdevgui-installer { 
     margin: 0 auto; 
-    width: 350px; 
+    width: 300px; 
     text-align: center;
     height: 300px;
 }
@@ -51,7 +56,7 @@ body {
 }
 
 #appdevgui-language { 
-    margin: 10px auto; 
+    margin: 5px auto; 
     width: 300px; 
     text-align: center; 
     height:203px; 
@@ -62,13 +67,15 @@ body {
     font-weight: bold; 
     color:#666666; 
 } 
-
+.profile-radio {
+    margin-top: 0px!important;
+}
 /*Shared CSS*/
 
 .component {
     display: block;
     margin: 0;
-    width: 350px;
+    width: 300px;
     background-color: white;
     height: 300px;
     float: left;
@@ -81,4 +88,19 @@ body {
 }
 .next-btn { 
     margin-top: 20px; 
+    position: absolute!important;
+    bottom: 20px;
+    right: 40px;
+}
+.back-btn { 
+    margin-top: 20px; 
+    position: absolute!important;
+    bottom: 20px;
+    left: 40px;
+}
+.verifyreq-input label {
+    color: #666666!important;
+}
+.verifyreq-input input {
+    background-color: white!important;
 }
