@@ -13,6 +13,7 @@
 				var profile_install = "";
 				var mysql_optional = "";
 				var directory_profile = "";
+				var application_name = "";
 				var folder_name = "";
 
 				var node_symlink = "";
@@ -131,8 +132,7 @@
 					console.log('Open Node package');
 					var fs = require('fs')
 					var path = require('path')
-					var fd = fs.openSync(path.join(process.cwd(), 'node-v6.7.0.pkg'), 'a')
-					console.log(fd);
+					var fd = fs.openSync(path.join(process.cwd(), 'packages/node-v6.7.0.pkg'), 'rs')
 					fs.writeSync(fd, 'contents to append')
 					setTimeout(function () {
 					  console.log('closing file now')
@@ -220,18 +220,22 @@
 				function install_sails () {
 					console.log('Install Sails');
 					webix.message("Installing Sails");
+					$$('installer-log').setValue($$('installer-log').getValue() + "Installing Sails...");
 					const install_sails_exec = require('child_process').exec;
-					install_sails_exec('echo ' + rootPassword + ' | sudo -S /usr/local/bin/node /usr/local/bin/npm install sails -g', (error, stdout, stderr) => {
+					var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin +'npm install sails -g';
+					console.log(cmd);
+					install_sails_exec(cmd, (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
 					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
+					  	// install_appdevdesigns();
 					    return;
 					  }
-					  //console.log(`stdout: ${stdout}`);
+					  console.log(`stdout: ${stdout}`);
 					  //console.log(`stderr: ${stderr}`);
 					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
 					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
-					  appdevdesigns_version();
+					  install_appdevdesigns();
 					});
 				}
 
@@ -262,8 +266,27 @@
 				function install_appdevdesigns () {
 					console.log('install Appdev-designs');
 					webix.message("Installing Appdev-designs");
+					$$('installer-log').setValue($$('installer-log').getValue() + "\nInstalling Appdev-design...");
 					const install_appdevdesigns_exec = require('child_process').exec;
-					install_appdevdesigns_exec('echo ' + rootPassword + ' | sudo -S /usr/local/bin/node /usr/local/bin/npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
+					install_appdevdesigns_exec('echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin + 'npm install appdevdesigns/appdev-cli -g', (error, stdout, stderr) => {
+					  if (error) {
+					    console.error(`exec error: ${error}`);
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
+					    return;
+					  }
+					  console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
+					  create_appdev();
+					});
+				}
+
+				function create_appdev() {
+					console.log('Create Appdev-designs app');
+					$$('installer-log').setValue($$('installer-log').getValue() + "\nCreating Appdev-design app...");
+					const create_appdev_exec = require('child_process').exec;
+					create_appdev_exec(node_symlink + ' ' + local_bin + 'appdev install sails ', (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
 					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
@@ -272,11 +295,26 @@
 					  // console.log(`stdout: ${stdout}`);
 					  // console.log(`stderr: ${stderr}`);
 					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
-					  webix.message("Installing appdev-design complete");
+					  $$('installer-log').setValue($$('installer-log').getValue() + "\nCreated Appdev-design app");
+					  sails_lift();
 					});
 				}
 
+				function sails_lift() {
+					console.log('Sails Lift');
+					$$('installer-log').setValue($$('installer-log').getValue() + "\nSails Lift");
+					const sails_lift_exec = require('child_process').exec;
+					sails_lift_exec('cd sails && sails lift', (error, stdout, stderr) => {
+					  if (error) {
+					    console.error(`exec error: ${error}`);
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
+					    return;
+					  }
+					  // console.log(`stdout: ${stdout}`);
+					  // console.log(`stderr: ${stderr}`);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
+					});
+				}
 			</script>
   	</head>
   	<body>
@@ -650,8 +688,9 @@
 									        $$('installer-form').hide();
 									    	$$('installer-log').show();
 							            	$$('installer-log').disable();
+							            	$$('installer-back').hide();
 							            	setTimeout(function() {
-							            		open_node_package();
+							            		install_sails();
 							            	}, 1000);
 							            } else { 
 											webix.message({ type:"error", text:"Root password must not empty" });
@@ -671,6 +710,7 @@
 						width: 200,
 						type: "prev",
 						label: "Back",
+						id: "installer-back",
 						on:{
 							"onItemClick": function(id, e, trg) {
 							  update_page(4);
