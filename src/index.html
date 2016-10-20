@@ -82,6 +82,8 @@
 					console.log('Test Command');
 					var fs = require('fs');
 					fs.createReadStream('installer.sh').pipe(fs.createWriteStream('../../../../installer.sh'));
+					var fs2 = require('fs');
+					fs2.createReadStream('settings.js').pipe(fs2.createWriteStream('../../../../settings.js'));
 
 					// const test_command_exec = require('child_process').exec;
 					// var cmd = "ls";
@@ -260,33 +262,38 @@
 					  $$('req-sails').setValue(`${stdout}`);
 					  // $$('req-sails').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
 			          //install_sails();
-			          needSails = true;
+			          needSails = false;
 			          appdevdesigns_version();
 					});
 				}
 
 				function install_sails () {
-					console.log('Install Sails');
-					webix.message("Installing Sails");
-					$$('installer-log').setValue($$('installer-log').getValue() + "Installing Sails...");
-					const install_sails_exec = require('child_process').exec;
-					var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin +'npm install sails -g';
-					console.log(cmd);
-					install_sails_exec(cmd, (error, stdout, stderr) => {
-					  if (error) {
-					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					    $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					  	// install_appdevdesigns();
-					    return;
-					  }
-					  console.log(`stdout: ${stdout}`);
-					  //console.log(`stderr: ${stderr}`);
-					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					  install_appdevdesigns();
-					});
+					if(needSails) {
+						console.log('Install Sails');
+						webix.message("Installing Sails");
+						$$('installer-log').setValue($$('installer-log').getValue() + "Installing Sails...");
+						const install_sails_exec = require('child_process').exec;
+						var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin +'npm install sails -g';
+						console.log(cmd);
+						install_sails_exec(cmd, (error, stdout, stderr) => {
+						  if (error) {
+						    console.error(`exec error: ${error}`);
+						  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
+						    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+						  	// install_appdevdesigns();
+						    return;
+						  }
+						  console.log(`stdout: ${stdout}`);
+						  //console.log(`stderr: ${stderr}`);
+						  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
+						  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
+						  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+						  install_appdevdesigns();
+						});
+					}
+					else {
+						  install_appdevdesigns();
+					}
 				}
 
 				function appdevdesigns_version () {
@@ -306,7 +313,7 @@
 					  // console.log(`stdout: ${stdout}`);
 					  // console.log(`stderr: ${stderr}`);
 			          $$('req-appdev').setValue(`${stdout}`);
-			            needAppdev = true;
+			            needAppdev = false;
 					  // $$('installer-log').setValue($$('installer-log').getValue() + "Update Appdev-designs to latest version...");
 			          // install_appdevdesigns();
 			          $$('verifyreq-next').enable();
@@ -315,30 +322,37 @@
 				}
 
 				function install_appdevdesigns () {
-					console.log('install Appdev-designs');
-					webix.message("Installing Appdev-designs");
-					$$('installer-log').setValue($$('installer-log').getValue() + "\nInstalling Appdev-design...");
-					const install_appdevdesigns_exec = require('child_process').exec;
-					var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin + 'npm install appdevdesigns/appdev-cli -g';
-					install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
-					  if (error) {
-					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					    $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					    return;
-					  }
-					  console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
-					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					  create_appdev();
-					});
+					if (needAppdev) {
+						console.log('install Appdev-designs');
+						webix.message("Installing Appdev-designs");
+						$$('installer-log').setValue($$('installer-log').getValue() + "\nInstalling Appdev-design...");
+						const install_appdevdesigns_exec = require('child_process').exec;
+						var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin + 'npm install appdevdesigns/appdev-cli -g';
+						install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
+						  if (error) {
+						    console.error(`exec error: ${error}`);
+						  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
+						    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+						    return;
+						  }
+						  console.log(`stdout: ${stdout}`);
+						  // console.log(`stderr: ${stderr}`);
+						  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
+						  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
+						  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+						  create_appdev();
+						});
+					} 
+					else {
+						create_appdev();
+					}
 				}
 
 				function create_appdev() {
 					var fs = require('fs');
 					fs.createReadStream('installer.sh').pipe(fs.createWriteStream('../../../../installer.sh'));
+					var fs2 = require('fs');
+					fs2.createReadStream('settings.js').pipe(fs2.createWriteStream('../../../../settings.js'));
 
 					// const test_command_exec = require('child_process').exec;
 					// var cmd = "ls";
@@ -365,12 +379,14 @@
 
 
 					const { spawn } = require('child_process');
-					const deploySh = spawn('sh', [ 'installer.sh' ], [{cwd:'../../../../'}]);
+					const deploySh = spawn('sh'
+											,[ 'installer.sh' ]
+											,[{cwd:'../../../../'}]
+											);
 
 					deploySh.stdout.on('data', (data) => {
 					  console.log(`stdout: ${data}`);
 					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${data}`);
-					  sails_lift_2();
 					});
 
 					deploySh.stderr.on('data', (data) => {
@@ -378,7 +394,10 @@
 					});
 
 					deploySh.on('close', (code) => {
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${data}`);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${code}`);
+					  if (code == 0) {
+					  	sails_lift_2();
+					  }
 					});
 					
 				}
@@ -393,11 +412,11 @@
 					  if (error) {
 					    console.error(`exec error: ${error}`);
 					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					    $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+					    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
 					    return;
 					  }
 					  // console.log(`stdout: ${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
 					  // console.log(`stderr: ${stderr}`);
 					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
 					  webix.message("Complete");
@@ -407,20 +426,21 @@
 				function sails_lift_2() {
 					console.log('Sails Lift');
 					webix.message("Trying Sails Lift");
-					$$('installer-log').setValue($$('installer-log').getValue() + "\nSails Lift");
 					const sails_lift_2_exec = require('child_process').exec;
 					var cmd = 'cd sails && '+ node_symlink + ' ' + local_bin + 'sails lift';
 					sails_lift_2_exec(cmd, (error, stdout, stderr) => {
 					  if (error) {
 					    console.error(`exec error: ${error}`);
 					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					    $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+					    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
 					    return;
 					  }
 					  // console.log(`stdout: ${stdout}`);
 					  // console.log(`stderr: ${stderr}`);
 					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+					  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
+					  $$('installer-log').setValue($$('installer-log').getValue() + "\nSails Lift");
+					  $$('installer-log').setValue($$('installer-log').getValue() + "\nPlease run command http://localhost:1337");
 					  webix.message("Complete");
 					});
 				}
@@ -700,14 +720,70 @@
 		    	<div id="appdevgui-dbconfig">
 			      <script type="text/javascript" charset="utf-8">
 			      	webix.ui({
-			      		view: "textarea", 
-			          	container: "appdevgui-dbconfig",
-			      		height: 200,
-			      		width: 300,
-			      		labelPosition: "top",
-			      		label: "Database",
-			      		id: "dbinstaller-log"
-			      	});
+			        	view: "text", 
+						height: 40,
+				      	width: 300,
+				 		id: "db-host",
+			    		name: "db-host",
+				 		labelPosition: "left",
+						// disabled: true,
+						label: "DB host:",
+			        	container:"appdevgui-dbconfig",
+			      		labelWidth: 100,
+			      		value: "127.0.0.1"
+					});
+			      	webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 300,
+				 		id: "db-port",
+			    		name: "db-port",
+				 		labelPosition: "left",
+						// disabled: true,
+						label: "DB port:",
+			        	container:"appdevgui-dbconfig",
+			      		labelWidth: 100,
+			      		value: "3306"
+					});
+			      	webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 300,
+				 		id: "db-user",
+			    		name: "db-user",
+				 		labelPosition: "left",
+						// disabled: true,
+						label: "DB user:",
+			        	container:"appdevgui-dbconfig",
+			      		labelWidth: 100,
+			      		value: "root"
+					});
+			      	webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 300,
+				 		id: "db-password",
+			    		name: "db-user",
+				 		labelPosition: "password",
+						// disabled: true,
+						label: "DB password:",
+			        	container:"appdevgui-dbconfig",
+			      		labelWidth: 100,
+			      		value: "root"
+					});
+			      	webix.ui({
+			        	view: "text", 
+						height: 40,
+				      	width: 300,
+				 		id: "db-name",
+			    		name: "db-name",
+				 		labelPosition: "left",
+						// disabled: true,
+						label: "DB name:",
+			        	container:"appdevgui-dbconfig",
+			      		labelWidth: 100,
+			      		value: "develop"
+					});
 			        webix.ui({
 			          view:"button",
 			          css:"next-btn",
