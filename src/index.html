@@ -24,7 +24,7 @@
 				var needAppdev = false;
 
 				var database_name = "";
-				var database_root = "";
+				var database_user = "";
 				var database_password = "";
 				var database_port = "";
 				var database_host = "";
@@ -48,7 +48,6 @@
 							break;
 						case 3:
 							$("#appdevgui-verifyreq-component").show();
-							// webix.message("Verify Requirements");
 			          		$$('verifyreq-next').disable();
 			          		$$('verifyreq-back').disable();
 			          		$$('req-node').setValue("");
@@ -58,12 +57,20 @@
 			          		which_node();
 							break;
 						case 4:
+							if($$('req-sails-need').getValue() == "1") {
+								needSails = true;
+							}
+							if($$('req-appdev-need').getValue() == "1") {
+								needAppdev = true;
+							}
+
 							$("#appdevgui-dbconfig-component").show();
 							break;
 						case 5:
 							$("#appdevgui-siteconfig-component").show();
 							break;
 						case 6:
+							replace_dbconfig();
 							$("#appdevgui-installer-component").show();
 							$$('installer-input').focus();
 							break;
@@ -80,51 +87,28 @@
 
 				function test_command () {
 					console.log('Test Command');
-					var fs = require('fs');
-					fs.createReadStream('installer.sh').pipe(fs.createWriteStream('../../../../installer.sh'));
-					var fs2 = require('fs');
-					fs2.createReadStream('settings.js').pipe(fs2.createWriteStream('../../../../settings.js'));
-
-					// const test_command_exec = require('child_process').exec;
-					// var cmd = "ls";
-					// console.log(cmd);
-					// test_command_exec(cmd,
-					// 				{
-					// 					cwd: '../../../../'
-					// 				}, 
-					// 				(error, stdout, stderr) => {
-					//   if (error) {
-					//     console.error(`exec error: ${error}`);
-					//   	// $$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					//     // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					//   	// install_appdevdesigns();
-					//     return;
-					//   }
-					//   console.log(`stdout: ${stdout}`);
-					//   //console.log(`stderr: ${stderr}`);
-					//   // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					//   // $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
-					//   // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					//   $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${stdout}`);
-					// });
-
-
-					const { spawn } = require('child_process');
-					const deploySh = spawn('sh', [ 'installer.sh' ], [{cwd:'../../../../'}]);
-
-					deploySh.stdout.on('data', (data) => {
-					  console.log(`stdout: ${data}`);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${data}`);
-					});
-
-					deploySh.stderr.on('data', (data) => {
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${data}`);
-					});
-
-					deploySh.on('close', (code) => {
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${data}`);
-					});
 					
+				}
+
+				function replace_dbconfig() {
+				  var fs = require('fs');
+
+				  var data = fs.readFileSync('settings.js', 'utf-8');
+
+				  var newValue = data.replace(/host-value/gim, database_host);
+				  newValue = newValue.replace(/port-value/gim, database_port);
+				  newValue = newValue.replace(/user-value/gim, database_user);
+				  newValue = newValue.replace(/password-value/gim, database_password);
+				  newValue = newValue.replace(/database-value/gim, database_name);
+				  if(mysql_optional == "0") {
+				    newValue = newValue.replace(/adaptor-value/gim, 'sails-disk');
+				  }
+				  else if(mysql_optional == "1"){
+				    newValue = newValue.replace(/adaptor-value/gim, 'mysql');
+				  }
+				  fs.writeFileSync('settings.js', newValue, 'utf-8');
+
+				  console.log('readFileSync complete');
 				}
 
 				function which_node () {
@@ -150,37 +134,14 @@
 
 				function try_which () {
 					console.log('Which Node');
-					const try_which_node_exec = require('child_process').exec;
-					webix.message("Trying...1");
-					try_which_node_exec('which /usr/bin/node', (error, stdout, stderr) => {
-					  if (error) {
-					    console.warn("Node Version Error");
-			            $$('req-node').setValue("Trying...1");
-			            console.log(`${stderr}`);
-			          	try_which2();
-					    return;
-					  }
-			          console.log(`${stdout}`);
-			          //Remove Newline
-			          node_symlink = stdout.replace(/(\r\n|\n|\r)/gm,"");
-			          local_bin = node_symlink.replace("node", "");
-					  console.log(node_symlink);
-					  console.log(local_bin);
-			          node_version();
-					});
-				}
-
-				function try_which2 () {
-					console.log('Which Node');
-					webix.message("Trying...2");
+					webix.message("Trying...");
 					const try_which_node2_exec = require('child_process').exec;
 					try_which_node2_exec('which /usr/local/bin/node', (error, stdout, stderr) => {
 					  if (error) {
 					    console.warn("Node Version Error");
-			            $$('req-node').setValue("Trying...2");
+			            $$('req-node').setValue("Trying...");
 			            console.log(`${stderr}`);
 						webix.message("Symlink Error");
-			          	//node_version2();
 					    return;
 					  }
 			          console.log(`${stdout}`);
@@ -209,18 +170,6 @@
 					});
 				}
 
-				// function open_node_package() {
-				// 	console.log('Open Node package');
-				// 	var fs = require('fs')
-				// 	var path = require('path')
-				// 	var fd = fs.openSync(path.join(process.cwd(), 'packages/node-v6.7.0.pkg'), 'rs')
-				// 	fs.writeSync(fd, 'contents to append')
-				// 	setTimeout(function () {
-				// 	  console.log('closing file now')
-				// 	  fs.closeSync(fd)
-				// 	}, 10000)
-				// }
-
 				function git_version () {
 					console.log('Check Git version');
 					const git_version_exec = require('child_process').exec;
@@ -228,18 +177,12 @@
 					  if (error) {
 					    console.warn("This machine doesn't have Git");
 			            $$('req-git').setValue("No Git installed");
-					    // $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
-			            //install_sails();
 			          	needGit = true;
 			          	sails_version();
 					    return;
 					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
 					  $$('req-git').setValue(`${stdout}`);
-					  // $$('req-sails').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
-			          //install_sails();
-			          needGit = true;
+			          needGit = false;
 			          sails_version();
 					});
 				}
@@ -251,17 +194,12 @@
 					  if (error) {
 					    console.warn("This machine doesn't have Sails");
 			            $$('req-sails').setValue("No SailsJS installed");
-					    // $$('installer-log').setValue($$('installer-log').getValue() + "New installing Sails latest version...");
-			            //install_sails();
 			          	needSails = true;
 			          	appdevdesigns_version();
 					    return;
 					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
 					  $$('req-sails').setValue(`${stdout}`);
-					  // $$('req-sails').setValue($$('installer-log').getValue() + "Update Sails to latest version...");
-			          //install_sails();
+					  $$('req-sails-need').show();
 			          needSails = false;
 			          appdevdesigns_version();
 					});
@@ -279,15 +217,10 @@
 						  if (error) {
 						    console.error(`exec error: ${error}`);
 						  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-						    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-						  	// install_appdevdesigns();
 						    return;
 						  }
 						  console.log(`stdout: ${stdout}`);
-						  //console.log(`stderr: ${stderr}`);
-						  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
 						  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
-						  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
 						  install_appdevdesigns();
 						});
 					}
@@ -303,19 +236,15 @@
 					  if (error) {
 					    console.warn("This machine doesn't have Appdev-designs");
 			            $$('req-appdev').setValue("No Appdev-designs installed");
-					    // $$('installer-log').setValue($$('installer-log').getValue() + "\nNew installing Appdev-designs latest version...");
-			            // install_appdevdesigns();
+
 			            needAppdev = true;
 			            $$('verifyreq-back').enable();
 			            $$('verifyreq-next').enable();
 					    return;
 					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
 			          $$('req-appdev').setValue(`${stdout}`);
+					  $$('req-appdev-need').show();
 			            needAppdev = false;
-					  // $$('installer-log').setValue($$('installer-log').getValue() + "Update Appdev-designs to latest version...");
-			          // install_appdevdesigns();
 			          $$('verifyreq-next').enable();
 			          $$('verifyreq-back').enable();
 					});
@@ -332,14 +261,10 @@
 						  if (error) {
 						    console.error(`exec error: ${error}`);
 						  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-						    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
 						    return;
 						  }
 						  console.log(`stdout: ${stdout}`);
-						  // console.log(`stderr: ${stderr}`);
-						  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
 						  $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
-						  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
 						  create_appdev();
 						});
 					} 
@@ -349,34 +274,19 @@
 				}
 
 				function create_appdev() {
-					var fs = require('fs');
-					fs.createReadStream('installer.sh').pipe(fs.createWriteStream('../../../../installer.sh'));
-					var fs2 = require('fs');
-					fs2.createReadStream('settings.js').pipe(fs2.createWriteStream('../../../../settings.js'));
+					var fs_installer = require('fs');
+					fs_installer.createReadStream('installer.sh').pipe(fs_installer.createWriteStream('../../../../installer.sh'));
+					// fs_installer.on('close', 
+					// 	function(){
+					// 		if (!had_error) fs.fs_installer('../../../../installer.sh');
+					// 	});
 
-					// const test_command_exec = require('child_process').exec;
-					// var cmd = "ls";
-					// console.log(cmd);
-					// test_command_exec(cmd,
-					// 				{
-					// 					cwd: '../../../../'
-					// 				}, 
-					// 				(error, stdout, stderr) => {
-					//   if (error) {
-					//     console.error(`exec error: ${error}`);
-					//   	// $$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					//     // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					//   	// install_appdevdesigns();
-					//     return;
-					//   }
-					//   console.log(`stdout: ${stdout}`);
-					//   //console.log(`stderr: ${stderr}`);
-					//   // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					//   // $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
-					//   // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					//   $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${stdout}`);
-					// });
-
+					var fs_settings = require('fs');
+					fs_settings.createReadStream('setting.js').pipe(fs_settings.createWriteStream('../../../../settings.js'));
+					// fs_settings.on('close', 
+					// 	function(){
+					// 		if (!had_error) fs.fs_installer('../../../../settings.js');
+					// 	});
 
 					const { spawn } = require('child_process');
 					const deploySh = spawn('sh'
@@ -387,6 +297,7 @@
 					deploySh.stdout.on('data', (data) => {
 					  console.log(`stdout: ${data}`);
 					  $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${data}`);
+
 					});
 
 					deploySh.stderr.on('data', (data) => {
@@ -394,54 +305,28 @@
 					});
 
 					deploySh.on('close', (code) => {
-					  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + `${code}`);
 					  if (code == 0) {
-					  	sails_lift_2();
+					  	sails_lift();
 					  }
 					});
 					
 				}
-				
+
 				function sails_lift() {
 					console.log('Sails Lift');
 					webix.message("Trying Sails Lift");
-					$$('installer-log').setValue($$('installer-log').getValue() + "\nSails Lift");
 					const sails_lift_exec = require('child_process').exec;
-					var cmd = 'cd sails && sails lift';
-					sails_lift_exec(cmd, (error, stdout, stderr) => {
-					  if (error) {
-					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					    return;
-					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					  // console.log(`stderr: ${stderr}`);
-					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					  webix.message("Complete");
-					});
-				}
-
-				function sails_lift_2() {
-					console.log('Sails Lift');
-					webix.message("Trying Sails Lift");
-					const sails_lift_2_exec = require('child_process').exec;
 					var cmd = 'cd sails && '+ node_symlink + ' ' + local_bin + 'sails lift';
-					sails_lift_2_exec(cmd, (error, stdout, stderr) => {
-					  if (error) {
-					    console.error(`exec error: ${error}`);
-					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-					    // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					    return;
-					  }
-					  // console.log(`stdout: ${stdout}`);
-					  // console.log(`stderr: ${stderr}`);
-					  // $$('installer-log').setValue($$('installer-log').getValue() + `${stdout}`);
-					  // $$('installer-log').setValue($$('installer-log').getValue() + "\n" + cmd);
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\nSails Lift");
-					  $$('installer-log').setValue($$('installer-log').getValue() + "\nPlease run command http://localhost:1337");
-					  webix.message("Complete");
+					var child = sails_lift_exec(cmd);
+					child.stdout.on('data', function(data) {
+					  $$('installer-log').setValue($$('installer-log').getValue() + data);
+
+					});
+					child.stderr.on('data', function(data) {
+					  	$$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" + data);
+					});
+					child.on('close', function(code) {
+						child.kill();
 					});
 				}
 			</script>
@@ -671,6 +556,19 @@
 			      		css: "verifyreq-input"
 					});
 					webix.ui({
+						view: "checkbox",
+						label: "Need update lastest Sails?",
+						labelPosition: "left",
+						labelWidth: 220,
+						height: 40,
+						width: 320,
+						id: "req-sails-need",
+						name: "req-sails-need",
+			        	container:"appdevgui-verifyreq",
+			        	hidden: true
+
+					});
+					webix.ui({
 			        	view: "text", 
 						height: 40,
 				      	width: 320,
@@ -682,6 +580,19 @@
 			        	container:"appdevgui-verifyreq",
 			      		labelWidth: 130, 
 			      		css: "verifyreq-input"
+					});
+					webix.ui({
+						view: "checkbox",
+						label: "Need update lastest Appdev?",
+						labelPosition: "left",
+						labelWidth: 220,
+						height: 40,
+						width: 320,
+						id: "req-appdev-need",
+						name: "req-appdev-need",
+			        	container:"appdevgui-verifyreq",
+			        	hidden: true
+
 					});
 			        webix.ui({
 						view:"button",
@@ -759,11 +670,12 @@
 			      		value: "root"
 					});
 			      	webix.ui({
-			        	view: "text", 
+			        	view: "text",
+			        	type: "password", 
 						height: 40,
 				      	width: 300,
 				 		id: "db-password",
-			    		name: "db-user",
+			    		name: "db-password",
 				 		labelPosition: "password",
 						// disabled: true,
 						label: "DB password:",
@@ -793,6 +705,12 @@
 			          label: "Next",
 			          on:{
 			            "onItemClick": function(id, e, trg) {
+						  database_host = $$('db-host').getValue();
+						  database_port = $$('db-port').getValue();
+						  database_user = $$('db-user').getValue();
+						  database_password = $$('db-password').getValue();
+						  database_name = $$('db-name').getValue();
+						  // webix.message(database_host);
 			              update_page(6);
 			            }
 			          }
