@@ -1,6 +1,6 @@
-if [ ! -d "sails" ]; then
+if [ ! -d "test_sails" ]; then
 
-	exec /usr/local/bin/node /usr/local/bin/appdev install sails --develop settings:settings.js
+	exec appdev install test_sails --develop settings:settings.js
 else 
-	echo "sails folder exist"
+	echo "test_sails folder exist"
 fi
