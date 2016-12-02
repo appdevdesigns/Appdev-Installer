@@ -8,9 +8,10 @@
             <script src="js/jquery-3.1.0.min.js" type="text/javascript"></script>
             <script type="text/javascript">
 
-var AD = require('ad-utils');
-var async = require('async');
-var path = require('path');
+
+                var AD = require('ad-utils');
+                var async = require('async');
+                var path = require('path');
 
 
                 //GLOBAL
@@ -22,8 +23,17 @@ var path = require('path');
                 var application_name = "";
                 var folder_name = "";
 
-                var node_symlink = "";
-                var local_bin = "";
+
+                // paths  :  a hash of the command and it's system path
+                var paths = {
+                    node:"",
+                    sails:"",
+                    npm:"",
+                    appdev:""
+                }
+
+
+
                 var needGit = false;
                 var needNode = false;
                 var needSails = false;
@@ -35,8 +45,22 @@ var path = require('path');
                 var database_port = "";
                 var database_host = "";
 
+
+// TODO:
+// Refactor the setup procedure to not use 'sudo npm instal ...'
+// 
+// 1) if they don't already have npm setup: 
+//    https://docs.npmjs.com/getting-started/fixing-npm-permissions#option-2-change-npms-default-directory-to-another-directory
+//
+// 2) if they do have npm installed:
+//    attempt the command without sudo, if it works great!
+//    if not, then ask for the password.
+
                 var rootPassword = "";
 
+
+// TODO:
+// Be sure to add the ability to change these values:
                 var pathInstallLocation = path.join('..', '..', 'test' ); 
                 var nameDirectory = 'test_sails';
 
@@ -44,7 +68,9 @@ var path = require('path');
                     return path.join(pathInstallLocation, file);
                 }
 
+                // logger:  a common logging function.
                 function logger(value) {
+                    console.log(value);
                     $$('installer-log').setValue($$('installer-log').getValue() + "\n"+value);
                 }
 
@@ -62,6 +88,13 @@ var path = require('path');
                             break;
                         case 2:
                             $("#appdevgui-profile-component").show();
+                            detectPaths(function(err){
+
+                                if (err) {
+// TODO: what do you do if we can't detect a 
+// path for Node?
+                                }
+                            });
                             break;
                         case 3:
                             $("#appdevgui-verifyreq-component").show();
@@ -71,21 +104,34 @@ var path = require('path');
                             $$('req-git').setValue("");
                             $$('req-sails').setValue("");
                             $$('req-appdev').setValue("");
-                            // which_node();
-                            async.parallel([
-                                which_node_p,
-                                node_version_p,
-                                git_version_p,
-                                sails_version_p,
-                                appdevdesigns_version_p
-                            ],(err, results) => {
+                            
+                            // first check Node exists:
+                            if (paths.node == '') {
+// TODO:
+// should rethink program flow to make sure node is installed before doing any 
+// of these checks.                                
+                                logger("*** Node is not installed.");
+                                logger("TODO: Handle installation of Node.");
+                                
+                            } else {
 
-                                if (err) {
+                                // else continue on with our version checking:
+                                async.parallel([
+                                    node_version_p,             // node version
+                                    git_version_p,              // git version
+                                    sails_version_p,            // sails version
+                                    appdevdesigns_version_p     // appdev cli version
+                                ],(err, results) => {
 
-                                }
-                                $$('verifyreq-back').enable();
-                                $$('verifyreq-next').enable();
-                            })
+                                    if (err) {
+
+                                    }
+                                    $$('verifyreq-back').enable();
+                                    $$('verifyreq-next').enable();
+                                })
+                            }
+                            
+                            
                             break;
                         case 4:
                             if($$('req-sails-need').getValue() == "1") {
@@ -102,7 +148,7 @@ var path = require('path');
                             break;
                         case 6:
                             replace_dbconfig();
-                            replace_installer();
+                            // replace_installer();  // <--  just run from command line
                             $("#appdevgui-installer-component").show();
                             $$('installer-input').focus();
                             break;
@@ -117,11 +163,19 @@ var path = require('path');
                     $('.component').hide();
                 }
 
-                function test_command () {
-                    console.log('Test Command');
-                    
-                }
 
+
+                /**
+                 * @function replaceTemplate
+                 * a common file/template replacement routine.
+                 *
+                 * This fn is Synchronous.
+                 *
+                 * @param {string} fromFile  the original template file
+                 * @param {string} toFile    the desired destination file
+                 * @param {obj} values       a key-value hash of the  values to
+                 *                           replace 
+                 */
                 function replaceTemplate(fromFile, toFile, values) {
                     var fs = require('fs');
 
@@ -157,7 +211,6 @@ var path = require('path');
                     replaceTemplate('settings_template.js', 'settings.js', settings);
                 }
 
-
                 function replace_installer() {
 
                     replaceTemplate('installer_template.sh', 'installer.sh', {
@@ -165,113 +218,78 @@ var path = require('path');
                     });
                 }
 
-                // function which_node () {
-                //     console.log('Which Node');
-                //     const which_node_exec = require('child_process').exec;
-                //     which_node_exec('which node', (error, stdout, stderr) => {
-                //       if (error) {
-                //         console.warn("Node Version Error");
-                //         $$('req-node').setValue("No Node installed");
-                //         console.log(`${stderr}`);
-                //         try_which();
-                //         return;
-                //       }
-                //       console.log(`${stdout}`);
-                //       //Remove Newline
-                //       node_symlink = stdout.replace(/(\r\n|\n|\r)/gm,"");
-                //       local_bin = node_symlink.replace("node", "");
-                //       console.log(node_symlink);
-                //       console.log(local_bin);
-                //       node_version();
-                //     });
-                // }
 
-                function which_node_p ( next ) {
-                    console.log('Which Node');
-                    const which_node_exec = require('child_process').exec;
-                    which_node_exec('which node', (error, stdout, stderr) => {
+
+                /**
+                 * @function detectPaths
+                 * check for all the expected paths in the system:
+                 *
+                 * @param {fn} cb  a node style callback when finished.
+                 */
+                function detectPaths(cb) {
+
+                    async.parallel([
+                        which_node,
+                        which_sails,
+                        which_npm,
+                        which_appdev
+                    ], function(err,results){
+
+// TODO: how do you handle missing paths here?
+
+                    })
+                }
+
+
+                /**
+                 * @function whichCommand
+                 * search the system to see the exact path for a given command.
+                 * updates the global {paths} object with the command path.
+                 *
+                 * @param {string} command  the command to search for
+                 * @param {fn} cb  a node style callback for the completion
+                 */
+                function whichCommand(command, cb) {
+                    console.log('Which '+command);
+                    const which_exec = require('child_process').exec;
+                    which_exec('which '+command, (error, stdout, stderr) => {
                       if (error) {
-                        console.warn("Node Version Error");
-                        $$('req-node').setValue("No Node installed");
-                        console.log(`${stderr}`);
-                        try_which_p(next);
+                        logger("which "+command+" returned an error:");
+                        logger(error);
+                        cb(error);
                         return;
                       }
-                      console.log(`${stdout}`);
                       //Remove Newline
-                      node_symlink = stdout.replace(/(\r\n|\n|\r)/gm,"");
-                      local_bin = node_symlink.replace("node", "");
-                      console.log(node_symlink);
-                      console.log(local_bin);
-                      next();
+                      var cleanPath = stdout.replace(/(\r\n|\n|\r)/gm,"");
+                      logger("which "+command+": "+cleanPath);
+                      paths[command] = cleanPath;
+                      cb(null, cleanPath);
                     });
                 }
 
-                // function try_which () {
-                //     console.log('Which Node');
-                //     webix.message("Trying...");
-                //     const try_which_node2_exec = require('child_process').exec;
-                //     try_which_node2_exec('which /usr/local/bin/node', (error, stdout, stderr) => {
-                //       if (error) {
-                //         console.warn("Node Version Error");
-                //         $$('req-node').setValue("Trying...");
-                //         console.log(`${stderr}`);
-                //         webix.message("Symlink Error");
-                //         return;
-                //       }
-                //       console.log(`${stdout}`);
-                //       //Remove Newline
-                //       node_symlink = stdout.replace(/(\r\n|\n|\r)/gm,"");
-                //       local_bin = node_symlink.replace("node", "");
-                //       console.log('node:'+node_symlink);
-                //       console.log('local bin:'+local_bin);
-                //       node_version();
-                //     });
-                // }
-
-                function try_which_p (next) {
-                    console.log('Which Node');
-                    webix.message("Trying...");
-                    const try_which_node2_exec = require('child_process').exec;
-                    try_which_node2_exec('which /usr/local/bin/node', (error, stdout, stderr) => {
-                      if (error) {
-                        console.warn("Node Version Error");
-                        $$('req-node').setValue("Trying...");
-                        console.log(`${stderr}`);
-                        webix.message("Symlink Error");
-                        next(error);
-                        return;
-                      }
-                      console.log(`${stdout}`);
-                      //Remove Newline
-                      node_symlink = stdout.replace(/(\r\n|\n|\r)/gm,"");
-                      local_bin = node_symlink.replace("node", "");
-                      console.log('node:'+node_symlink);
-                      console.log('local bin:'+local_bin);
-                      next();
-                    });
+                function which_node(cb) {
+                    whichCommand('node', cb);
                 }
 
-                // function node_version () {
-                //     console.log('Check Node version');
-                //     const node_version_exec = require('child_process').exec;
-                //     node_version_exec(node_symlink + ' -v', (error, stdout, stderr) => {
-                //       if (error) {
-                //         $$('req-node').setValue("Node version error");
-                //         needNode = true;
-                //         git_version();
-                //         return;
-                //       }
-                //       $$('req-node').setValue(`${stdout}`);
-                //       needNode = false;
-                //       git_version();
-                //     });
-                // }
+                function which_sails(cb) {
+                    whichCommand('sails', cb);
+                }
+
+                function which_npm(cb) {
+                    whichCommand('npm', cb);
+                }
+
+                function which_appdev(cb) {
+                    whichCommand('appdev', cb);
+                }
+
+
+
 
                 function node_version_p (next) {
                     console.log('Check Node version');
                     const node_version_exec = require('child_process').exec;
-                    node_version_exec(node_symlink + ' -v', (error, stdout, stderr) => {
+                    node_version_exec(paths.node + ' -v', (error, stdout, stderr) => {
                       if (error) {
                         $$('req-node').setValue("Node version error");
                         needNode = true;
@@ -284,22 +302,6 @@ var path = require('path');
                     });
                 }
 
-                // function git_version () {
-                //     console.log('Check Git version');
-                //     const git_version_exec = require('child_process').exec;
-                //     git_version_exec('git --version', (error, stdout, stderr) => {
-                //       if (error) {
-                //         console.warn("This machine doesn't have Git");
-                //         $$('req-git').setValue("No Git installed");
-                //         needGit = true;
-                //         sails_version();
-                //         return;
-                //       }
-                //       $$('req-git').setValue(`${stdout}`);
-                //       needGit = false;
-                //       sails_version();
-                //     });
-                // }
 
                 function git_version_p (next) {
                     console.log('Check Git version');
@@ -318,30 +320,12 @@ var path = require('path');
                     });
                 }
 
-                // function sails_version () {
-                //     console.log('Check Sails version');
-                //     const sails_version_exec = require('child_process').exec;
-                //     // sails_version_exec(node_symlink + " " + local_bin + "sails -v", (error, stdout, stderr) => {
-                //     sails_version_exec("sails -v", (error, stdout, stderr) => {
-                //       if (error) {
-                //         console.warn("This machine doesn't have Sails");
-                //         $$('req-sails').setValue("No SailsJS installed");
-                //         needSails = true;
-                //         appdevdesigns_version();
-                //         return;
-                //       }
-                //       $$('req-sails').setValue(`${stdout}`);
-                //       $$('req-sails-need').show();
-                //       needSails = false;
-                //       appdevdesigns_version();
-                //     });
-                // }
 
                 function sails_version_p (next) {
                     console.log('Check Sails version');
                     const sails_version_exec = require('child_process').exec;
-                    // sails_version_exec(node_symlink + " " + local_bin + "sails -v", (error, stdout, stderr) => {
-                    sails_version_exec("sails -v", (error, stdout, stderr) => {
+
+                    sails_version_exec(paths.node + " "+paths.sails+" -v", (error, stdout, stderr) => {
                       if (error) {
                         console.warn("This machine doesn't have Sails");
                         $$('req-sails').setValue("No SailsJS installed");
@@ -356,29 +340,6 @@ var path = require('path');
                     });
                 }
 
-                // function install_sails () {
-                //     if(needSails) {
-                //         console.log('Install Sails');
-                //         webix.message("Installing Sails");
-                //         $$('installer-log').setValue($$('installer-log').getValue() + "Installing Sails...");
-                //         const install_sails_exec = require('child_process').exec;
-                //         var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin +'npm install sails -g';
-                //         console.log(cmd);
-                //         install_sails_exec(cmd, (error, stdout, stderr) => {
-                //           if (error) {
-                //             console.error(`exec error: ${error}`);
-                //             $$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-                //             return;
-                //           }
-                //           console.log(`stdout: ${stdout}`);
-                //           $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Sails Successful");
-                //           install_appdevdesigns();
-                //         });
-                //     }
-                //     else {
-                //           install_appdevdesigns();
-                //     }
-                // }
 
                 function install_sails_s (next) {
                     if(needSails) {
@@ -386,7 +347,7 @@ var path = require('path');
                         webix.message("Installing Sails");
                         logger( "Installing Sails...");
                         const install_sails_exec = require('child_process').exec;
-                        var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin +'npm install sails -g';
+                        var cmd = 'echo ' + rootPassword + ' | sudo -S ' + paths.node + ' ' + paths.npm +' install sails -g';
                         console.log(cmd);
                         install_sails_exec(cmd, (error, stdout, stderr) => {
                           if (error) {
@@ -397,7 +358,9 @@ var path = require('path');
                           }
                           console.log(`stdout: ${stdout}`);
                           logger("Installed Sails Successful");
-                          next();
+
+                          // should update the sails path here:
+                          which_sails(next);
                         });
                     }
                     else {
@@ -405,33 +368,12 @@ var path = require('path');
                     }
                 }
 
-                // function appdevdesigns_version () {
-                //     console.log('Check Appdev-designs version');
-                //     const appdevdesigns_version_exec = require('child_process').exec;
-                //     // appdevdesigns_version_exec(node_symlink + " " + local_bin + "appdev -V", (error, stdout, stderr) => {
-                //     appdevdesigns_version_exec("appdev -V", (error, stdout, stderr) => {
-                //       if (error) {
-                //         console.warn("This machine doesn't have Appdev-designs");
-                //         $$('req-appdev').setValue("No Appdev-designs installed");
-
-                //         needAppdev = true;
-                //         $$('verifyreq-back').enable();
-                //         $$('verifyreq-next').enable();
-                //         return;
-                //       }
-                //       $$('req-appdev').setValue(`${stdout}`);
-                //       $$('req-appdev-need').show();
-                //         needAppdev = false;
-                //       $$('verifyreq-next').enable();
-                //       $$('verifyreq-back').enable();
-                //     });
-                // }
 
                 function appdevdesigns_version_p (next) {
                     console.log('Check Appdev-designs version');
                     const appdevdesigns_version_exec = require('child_process').exec;
                     // appdevdesigns_version_exec(node_symlink + " " + local_bin + "appdev -V", (error, stdout, stderr) => {
-                    appdevdesigns_version_exec("appdev -V", (error, stdout, stderr) => {
+                    appdevdesigns_version_exec(paths.node +" "+ paths.appdev + " -V", (error, stdout, stderr) => {
                       if (error) {
                         console.warn("This machine doesn't have Appdev-designs");
                         $$('req-appdev').setValue("No Appdev-designs installed");
@@ -447,37 +389,14 @@ var path = require('path');
                     });
                 }
 
-                // function install_appdevdesigns () {
-                //     if (needAppdev) {
-                //         console.log('install Appdev-designs');
-                //         webix.message("Installing Appdev-designs");
-                //         $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalling Appdev-design...");
-                //         const install_appdevdesigns_exec = require('child_process').exec;
-                //         // var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin + 'npm install appdevdesigns/appdev-cli -g';
-                //         var cmd = 'echo ' + rootPassword + ' | sudo -S npm install appdevdesigns/appdev-cli -g';
-                //         install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
-                //           if (error) {
-                //             console.error(`exec error: ${error}`);
-                //             $$('installer-log').setValue($$('installer-log').getValue() + "\nPlease check error log:\n" +`${error}`);
-                //             return;
-                //           }
-                //           console.log(`stdout: ${stdout}`);
-                //           $$('installer-log').setValue($$('installer-log').getValue() + "\nInstalled Appdev-design Successful");
-                //           create_appdev();
-                //         });
-                //     } 
-                //     else {
-                //         create_appdev();
-                //     }
-                // }
+
                 function install_appdevdesigns_s (next) {
                     if (needAppdev) {
                         console.log('install Appdev-designs');
                         webix.message("Installing Appdev-designs");
                         logger("Installing Appdev-design...");
                         const install_appdevdesigns_exec = require('child_process').exec;
-                        // var cmd = 'echo ' + rootPassword + ' | sudo -S ' + node_symlink + ' ' + local_bin + 'npm install appdevdesigns/appdev-cli -g';
-                        var cmd = 'echo ' + rootPassword + ' | sudo -S npm install appdevdesigns/appdev-cli -g';
+                        var cmd = 'echo ' + rootPassword + ' | sudo -S '+ paths.node +' '+ paths.npm + ' install appdevdesigns/appdev-cli -g';
                         install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
                           if (error) {
                             console.error(`exec error: ${error}`);
@@ -486,7 +405,9 @@ var path = require('path');
                           }
                           console.log(`stdout: ${stdout}`);
                           logger("Installed Appdev-design Successful");
-                          next();
+
+                          // update the path to appdev
+                          which_appdev(next);
                         });
                     } 
                     else {
@@ -494,73 +415,101 @@ var path = require('path');
                     }
                 }
 
-/////
-//// LEFT OFF HERE
-////
-//// figure out why this process exits before the command is complete.
-//// the error shown inlog is due to improper reference in next step.
-////
-//// - replace this with AD.util.spawn()  ?
-//// - fix path finding of node & sails
-//// 
+
                 function create_appdev_s(next) {
-                    var fs_installer = require('fs');
-                    fs_installer.createReadStream('installer.sh').pipe(fs_installer.createWriteStream(toInstallLocation('installer.sh')));
-                    // fs_installer.on('close', 
-                    //  function(){
-                    //      if (!had_error) fs.fs_installer('../../../../installer.sh');
-                    //  });
+                    var fs = require('fs');
 
-                    var fs_settings = require('fs');
-                    fs_settings.createReadStream('settings.js').pipe(fs_settings.createWriteStream(toInstallLocation('settings.js')));
-                    // fs_settings.on('close', 
-                    //  function(){
-                    //      if (!had_error) fs.fs_installer('../../../../settings.js');
-                    //  });
-                    var chdir = toInstallLocation('');
-                    const { spawn } = require('child_process');
-                    const deploySh = spawn('sh'
-                                            ,[ 'installer.sh' ]
-                                            ,[{cwd:chdir}]
-                                            );
+                    var currentDir = process.cwd();
+                    var installDir = toInstallLocation('');
 
-                    deploySh.stdout.on('data', (data) => {
-                      console.log(`stdout: ${data}`);
-                      logger(`${data}`);
+                    async.series([
 
-                    });
+                        function copySettings(cb) {
+                            fs.readFile('settings.js', 'utf8', function(err, contents){
 
-                    deploySh.stderr.on('data', (data) => {
-                      logger( `${data}`);
-                    });
+                                if (err) {
+                                    logger('Error reading settings.js :'+err);
+                                    cb(err);
+                                    return;
+                                }
 
-                    deploySh.on('close', (code) => {
-                      if (code == 0) {
-                        logger('****** create appdev closed! *******');
-                        next();
-                      }
-                    });
+                                fs.writeFile(toInstallLocation('settings.js'), contents, function(err){
+                                    if(err){
+                                        logger('Error writing new '+ toInstallLocation('settings.js') +':'+ err);
+                                        console.error(err);
+                                    }
+                                    cb(err);
+                                })
+                            })
+                        },
+
+                        function runInstallCommand(cb){
+                            
+                            // change to the install directory
+                            process.chdir(installDir);
+
+                            // run the command.
+                            AD.spawn.command({
+                                command:'appdev',
+                                options:[ 'install', nameDirectory, '--develop', 'settings:settings.js' ],
+                                shouldEcho:false,
+                                onData:logger
+                            })
+                            .fail(function(err){
+                                logger('Error running appdev install:'+err);
+                                console.error(err);
+                                cb(err);
+                            })
+                            .then(function(){
+                                cb();
+                            })
+
+                        }
+                    ], function(err, res){
+
+                        // return us to the proper directory.
+                        process.chdir(currentDir);
+
+                        next(err);
+                    })
                     
                 }
+
 
                 function sails_lift_s(next) {
                     console.log('Sails Lift');
                     webix.message("Trying Sails Lift");
                     const sails_lift_exec = require('child_process').exec;
-                    var cmd = 'cd '+nameDirectory+' && '+ node_symlink + ' ' + local_bin + 'sails lift';
+                    var cmd = 'cd '+toInstallLocation(nameDirectory)+' && '+ paths.node + ' ' + paths.sails + ' lift';
                     var child = sails_lift_exec(cmd);
                     child.stdout.on('data', function(data) {
                       logger(data);
 
+                      // wait until we see the "Server lifted" message:
+                      if (data.indexOf("Server lifted") != -1) {
+                        next();
+                      }
+
                     });
                     child.stderr.on('data', function(data) {
+
+// TODO:
+// EADDRINUSE
+// check for address in use and verify that they don't have another instance running.
+
+
                         logger("Please check error log:\n" + data);
                     });
                     child.on('close', function(code) {
                         child.kill();
                     });
 
-                    next();
+// TODO: 
+// keep a global link to this running process.
+// detect when the App quits, and then kill this process
+
+
+                    // next();
                 }
             </script>
     </head>
@@ -1025,8 +974,10 @@ var path = require('path');
                                             $$('installer-log').show();
                                             // $$('installer-log').disable();
                                             $$('installer-back').hide();
+
+                                            // Why do we use setTimeout here?
                                             setTimeout(function() {
-                                                //test_command();
+                                                
                                                 async.series([
 
                                                     install_sails_s,
@@ -1038,6 +989,9 @@ var path = require('path');
 
                                                     if (err) {
                                                         logger( "Please check error log:\n" + `${err}`);
+                                                    } else {
+
+                                                        window.location.assign('http://localhost:1337/page/opsportal');
                                                     }
                                                 })
                                             }, 1000);
