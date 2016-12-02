@@ -31,7 +31,7 @@ and for extra credit you can temporarialy add the NW.js path:
 $ cd ../../nwjs-sdk/nwjs.app/Contents/MacOS
 $ pwd  											# copy the [path] 
 $ PATH=$PATH:[path]								# past the [path] here
-$ ../../../../Appdev-Installer/src/
+$ cd ../../../../Appdev-Installer/src/
 $ nwjs .
 ```
 
