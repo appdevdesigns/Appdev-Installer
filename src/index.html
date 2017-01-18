@@ -25,6 +25,7 @@
 
                 var current_os = "";
                 var os_path = "";
+                var npm_prefix = "NPM_CONFIG_PREFIX=~/.npm-global ";
 
                 // paths  :  a hash of the command and it's system path
                 var paths = {
@@ -121,8 +122,8 @@
                                 logger("*** Node is not installed.");
                                 logger("TODO: Handle installation of Node.");
 // I think manual install Node is the best way for development
-                                window.location.assign('https://nodejs.org');
                                 webix.message("Please download and install Node First");
+                                window.location.assign('https://nodejs.org');
 // TODO: Linux
 // for Linux we can use "curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash - 
 //                      sudo apt-get install -y nodejs""
@@ -416,6 +417,16 @@
                     whichCommand('appdev', cb);
                 }
 
+                function update_sails_path(cb) {
+                    path.sails = npm_prefix + path.node + "bin/sails";
+                    install_appdevdesigns();
+                }
+
+                function update_appdev_path(cb) {
+                    path.appdev = npm_prefix + path.node + "bin/appdev";
+                    create_appdev_s();
+                }
+
 
                 function node_version_p (next) {
                     console.log('Check Node version');
@@ -479,7 +490,6 @@
                     };
                 }
 
-
                 function install_sails_s (next) {
                     if(needSails) {
                         console.log('Install Sails');
@@ -507,6 +517,32 @@
                     }
                 }
 
+                function install_sails (next) {
+                    if(needSails) {
+                        console.log('Install Sails');
+                        webix.message("Installing Sails");
+                        logger( "Installing Sails...");
+                        const install_sails_exec = require('child_process').exec;
+                        var cmd = npm_prefix + paths.node + ' ' + paths.npm +' install sails -g';
+                        console.log(cmd);
+                        install_sails_exec(cmd, (error, stdout, stderr) => {
+                          if (error) {
+                            console.error(`exec error: ${error}`);
+                            logger("Please check error log:\n" +`${error}`);
+                            next(error);
+                            return;
+                          }
+                          console.log(`stdout: ${stdout}`);
+                          logger("Installed Sails Successful");
+
+                          // should update the sails path here:
+                          update_sails_path(next);
+                        });
+                    }
+                    else {
+                          next();
+                    }
+                }
 
                 function appdevdesigns_version_p (next) {
                     console.log('Check Appdev-designs version');
@@ -561,6 +597,31 @@
                     }
                 }
 
+                function install_appdevdesigns (next) {
+                    if (needAppdev) {
+                        console.log('install Appdev-designs');
+                        webix.message("Installing Appdev-designs");
+                        logger("Installing Appdev-design...");
+                        const install_appdevdesigns_exec = require('child_process').exec;
+                        var cmd = npm_prefix + paths.node +' '+ paths.npm + ' install appdevdesigns/appdev-cli -g';
+                        install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
+                          if (error) {
+                            console.error(`exec error: ${error}`);
+                            next(error);
+                            return;
+                          }
+                          console.log(`stdout: ${stdout}`);
+                          logger("Installed Appdev-design Successful");
+
+                          // update the path to appdev
+                          update_appdev_path(next);
+
+                        });
+                    } 
+                    else {
+                        next();
+                    }
+                }
 
                 function create_appdev_s(next) {
                     var fs = require('fs');
@@ -629,7 +690,43 @@
                     var cmd = 'cd '+toInstallLocation(nameDirectory)+' && '+ paths.node + ' ' + paths.sails + ' lift';
                     var child = sails_lift_exec(cmd);
                     child.stdout.on('data', function(data) {
-                      logger(data);
+                      // logger(data);
+
+                      // wait until we see the "Server lifted" message:
+                      if (data.indexOf("Server lifted") != -1) {
+                        next();
+                      }
+
+                    });
+                    child.stderr.on('data', function(data) {
+
+// TODO:
+// EADDRINUSE
+// check for address in use and verify that they don't have another instance running.
+
+
+                        logger("Please check error log:\n" + data);
+                    });
+                    child.on('close', function(code) {
+                        child.kill();
+                    });
+
+// TODO: 
+// keep a global link to this running process.
+// detect when the App quits, and then kill this process
+
+
+                    // next();
+                }
+
+                function sails_lift(next) {
+                    console.log('Sails Lift');
+                    webix.message("Trying Sails Lift");
+                    const sails_lift_exec = require('child_process').exec;
+                    var cmd = 'cd '+toInstallLocation(nameDirectory)+' && '+ npm_prefix + paths.node + ' ' + paths.sails + ' lift';
+                    var child = sails_lift_exec(cmd);
+                    child.stdout.on('data', function(data) {
+                      // logger(data);
 
                       // wait until we see the "Server lifted" message:
                       if (data.indexOf("Server lifted") != -1) {
