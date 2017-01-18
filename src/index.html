@@ -23,6 +23,8 @@
                 var application_name = "";
                 var folder_name = "";
 
+                var current_os = "";
+                var os_path = "";
 
                 // paths  :  a hash of the command and it's system path
                 var paths = {
@@ -61,8 +63,9 @@
 
 // TODO:
 // Be sure to add the ability to change these values:
-                var pathInstallLocation = path.join('..', '..', 'test' ); 
-                var nameDirectory = 'test_sails';
+                // var pathInstallLocation = path.join('..', '..', 'test' );
+                var pathInstallLocation = ""; 
+                var nameDirectory = 'test';
 
                 function toInstallLocation(file) {
                     return path.join(pathInstallLocation, file);
@@ -88,18 +91,23 @@
                             break;
                         case 2:
                             $("#appdevgui-profile-component").show();
+                            checkOS();
+                            makeNPMPrefix();
+                            // setEnvironment();
+                            // checkEnvironment();
+
                             detectPaths(function(err){
 
                                 if (err) {
 // TODO: what do you do if we can't detect a 
-// path for Node?
+// path for Node?   
                                 }
                             });
                             break;
                         case 3:
                             $("#appdevgui-verifyreq-component").show();
                             $$('verifyreq-next').disable();
-                            $$('verifyreq-back').disable();
+                            // $$('verifyreq-back').disable();
                             $$('req-node').setValue("");
                             $$('req-git').setValue("");
                             $$('req-sails').setValue("");
@@ -112,9 +120,25 @@
 // of these checks.                                
                                 logger("*** Node is not installed.");
                                 logger("TODO: Handle installation of Node.");
+// I think manual install Node is the best way for development
+                                window.location.assign('https://nodejs.org');
+                                webix.message("Please download and install Node First");
+// TODO: Linux
+// for Linux we can use "curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash - 
+//                      sudo apt-get install -y nodejs""
+// to install
+
+// TODO: OSx req for Git and xCode
+// git clone git://github.com/nodejs/node
+// cd node
+// ./configure
+// make
+// sudo make install
+
+// This guide show you how to install Node via Command line https://howtonode.org/how-to-install-nodejs
+
                                 
                             } else {
-
                                 // else continue on with our version checking:
                                 async.parallel([
                                     node_version_p,             // node version
@@ -134,12 +158,15 @@
                             
                             break;
                         case 4:
+                            if ($$('profile-input').getValue() != "") {
+                                create_directory($$('profile-input').getValue());
+                            };
                             if($$('req-sails-need').getValue() == "1") {
                                 needSails = true;
-                            }
+                            };
                             if($$('req-appdev-need').getValue() == "1") {
                                 needAppdev = true;
-                            }
+                            };
 
                             $("#appdevgui-dbconfig-component").show();
                             break;
@@ -227,6 +254,9 @@
                  * @param {fn} cb  a node style callback when finished.
                  */
                 function detectPaths(cb) {
+                    if (current_os == "darwin") {
+                        os_path = "/usr/local/bin/";
+                    };
 
                     async.parallel([
                         which_node,
@@ -237,9 +267,111 @@
 
 // TODO: how do you handle missing paths here?
 
+// For OSX
+                        // paths.node = "/usr/local/bin/node";
+                        // paths.sails = "/usr/local/bin/sails";
+                        // paths.appdev = "/usr/local/bin/appdev";
+                        // paths.npms = "/usr/local/bin/npm";
+
                     })
                 }
 
+                function checkOS() {
+                    current_os = require('os').platform();
+                    // webix.message(current_os);
+                }
+
+                function makeNPMPrefix() {
+                    // webix.message("Make NPM Folder");
+                    const env_exec = require('child_process').exec;
+                    env_exec('mkdir ~/.npm-global', (error, stdout, stderr) => {
+                      if (error) {
+                        // webix.message("Error Make NPM");
+                        logger(error);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
+                        return;
+                      }
+                      // webix.message(stdout);
+                      $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
+                      console.log(stdout);
+                    });
+                }
+
+                function create_directory(directory_folder) {
+                    // webix.message("Create Directory");
+                    logger("create directory");
+                    nameDirectory = directory_folder;
+                    pathInstallLocation = path.join('..', '..', directory_folder);
+                    var cmd = "mkdir " + pathInstallLocation;
+                    logger(cmd);
+                    const directory_exec = require('child_process').exec;
+                    directory_exec(cmd, (error, stdout, stderr) => {
+                      if (error) {
+                        // webix.message("Error Make Directory");
+                        logger(error);
+                        return;
+                      }
+                      // webix.message(stdout);
+                      console.log(stdout);
+                    });
+                }
+
+                // function setEnvironment() {
+                //     webix.message("Set Environment");
+                //     const env_exec = require('child_process').exec;
+                //     env_exec('export NPM_CONFIG_PREFIX=~/.npm-global', (error, stdout, stderr) => {
+                //       if (error) {
+                //         webix.message("Error Set Environment");
+                //         logger(error);
+                //         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
+                //         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
+                //         return;
+                //       }
+                //       webix.message("Great!");
+                //       webix.message(stdout);
+                //       $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
+                //       console.log(stdout);
+                //       checkEnvironment();
+                //     });
+                // }
+
+                function checkEnvironment() {
+                    // webix.message("Check Environment");
+                    const env_exec = require('child_process').exec;
+                    env_exec('env', (error, stdout, stderr) => {
+                      if (error) {
+                        // webix.message("Error");
+                        logger(error);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
+                        return;
+                      }
+                      // webix.message("Great!");
+                      // webix.message(stdout);
+                      $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
+                      console.log(stdout);
+                    });
+                }
+
+                function killNodeProcess() {
+                    const env_exec = require('child_process').exec;
+                    env_exec('/usr/local/bin/node -v', (error, stdout, stderr) => {
+                      if (error) {
+                        // webix.message("Error");
+                        logger(error);
+                        cb(error);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
+                        cb(error);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
+                        return;
+                      }
+                      // webix.message("Great!");
+                      // webix.message(stdout);
+                      $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
+                      console.log(stdout);
+                    });
+                }
 
                 /**
                  * @function whichCommand
@@ -250,11 +382,12 @@
                  * @param {fn} cb  a node style callback for the completion
                  */
                 function whichCommand(command, cb) {
-                    console.log('Which '+command);
+                    // webix.message(command);
+                    console.log('which '+command);
                     const which_exec = require('child_process').exec;
-                    which_exec('which '+command, (error, stdout, stderr) => {
+                    which_exec('which '+ os_path + command, (error, stdout, stderr) => {
                       if (error) {
-                        logger("which "+command+" returned an error:");
+                        logger("which " + os_path + command + " returned an error:");
                         logger(error);
                         cb(error);
                         return;
@@ -282,8 +415,6 @@
                 function which_appdev(cb) {
                     whichCommand('appdev', cb);
                 }
-
-
 
 
                 function node_version_p (next) {
@@ -323,21 +454,29 @@
 
                 function sails_version_p (next) {
                     console.log('Check Sails version');
-                    const sails_version_exec = require('child_process').exec;
+                    if (paths.sails != "") {
 
-                    sails_version_exec(paths.node + " "+paths.sails+" -v", (error, stdout, stderr) => {
-                      if (error) {
-                        console.warn("This machine doesn't have Sails");
+                        const sails_version_exec = require('child_process').exec;
+
+                        sails_version_exec(paths.node + " " + paths.sails + " -v", (error, stdout, stderr) => {
+                        if (error) {
+                            console.warn("This machine doesn't have Sails");
+                            $$('req-sails').setValue("No SailsJS installed");
+                            needSails = true;
+                            next();
+                            return;
+                        }
+                            $$('req-sails').setValue(`${stdout}`);
+                            $$('req-sails-need').show();
+                            needSails = false;
+                            next();
+                        });
+                    }
+                    else {
                         $$('req-sails').setValue("No SailsJS installed");
                         needSails = true;
                         next();
-                        return;
-                      }
-                      $$('req-sails').setValue(`${stdout}`);
-                      $$('req-sails-need').show();
-                      needSails = false;
-                      next();
-                    });
+                    };
                 }
 
 
@@ -368,52 +507,32 @@
                     }
                 }
 
-                function install_sails (next) {
-                    if(needSails) {
-                        console.log('Install Sails');
-                        webix.message("Installing Sails");
-                        logger( "Installing Sails...");
-                        const install_sails_exec = require('child_process').exec;
-                        var cmd = paths.node + ' ' + paths.npm +' install sails -g';
-                        console.log(cmd);
-                        install_sails_exec(cmd, (error, stdout, stderr) => {
-                          if (error) {
-                            console.error(`exec error: ${error}`);
-                            logger("Please check error log:\n" +`${error}`);
-                            next(error);
-                            return;
-                          }
-                          console.log(`stdout: ${stdout}`);
-                          logger("Installed Sails Successful");
-
-                          // should update the sails path here:
-                          which_sails(next);
-                        });
-                    }
-                    else {
-                          next();
-                    }
-                }
-
 
                 function appdevdesigns_version_p (next) {
                     console.log('Check Appdev-designs version');
-                    const appdevdesigns_version_exec = require('child_process').exec;
-                    // appdevdesigns_version_exec(node_symlink + " " + local_bin + "appdev -V", (error, stdout, stderr) => {
-                    appdevdesigns_version_exec(paths.node +" "+ paths.appdev + " -V", (error, stdout, stderr) => {
-                      if (error) {
-                        console.warn("This machine doesn't have Appdev-designs");
-                        $$('req-appdev').setValue("No Appdev-designs installed");
+                    if (paths.appdev != "") {
+                        const appdevdesigns_version_exec = require('child_process').exec;
+                        appdevdesigns_version_exec(paths.node +" "+ paths.appdev + " -V", (error, stdout, stderr) => {
+                        if (error) {
+                            console.warn("This machine doesn't have Appdev-designs");
+                            $$('req-appdev').setValue("No Appdev-designs installed");
 
-                        needAppdev = true;
-                        next();
-                        return;
-                      }
-                      $$('req-appdev').setValue(`${stdout}`);
-                      $$('req-appdev-need').show();
+                            needAppdev = true;
+                            next();
+                            return;
+                        }
+                        $$('req-appdev').setValue(`${stdout}`);
+                        $$('req-appdev-need').show();
                         needAppdev = false;
                         next();
-                    });
+                        });
+                    }
+                    else {
+                        $$('req-appdev').setValue("No Appdev-designs installed");
+                        needAppdev = true;
+                        next();
+                    };
+
                 }
 
 
@@ -442,30 +561,6 @@
                     }
                 }
 
-                function install_appdevdesigns (next) {
-                    if (needAppdev) {
-                        console.log('install Appdev-designs');
-                        webix.message("Installing Appdev-designs");
-                        logger("Installing Appdev-design...");
-                        const install_appdevdesigns_exec = require('child_process').exec;
-                        var cmd = paths.node +' '+ paths.npm + ' install appdevdesigns/appdev-cli -g';
-                        install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
-                          if (error) {
-                            console.error(`exec error: ${error}`);
-                            next(error);
-                            return;
-                          }
-                          console.log(`stdout: ${stdout}`);
-                          logger("Installed Appdev-design Successful");
-
-                          // update the path to appdev
-                          which_appdev(next);
-                        });
-                    } 
-                    else {
-                        next();
-                    }
-                }
 
                 function create_appdev_s(next) {
                     var fs = require('fs');
@@ -672,7 +767,7 @@
                                                 $$('profile-checkbox').hide();
                                                 $$('profile-checkbox').setValue(0);
                                                 $$('profile-input').disable();
-                                                $$('profile-input').setValue("/"+nameDirectory+"/");
+                                                $$('profile-input').setValue(nameDirectory);
                                                 break;
                                             case "2":
                                                 $$('profile-checkbox').show();
@@ -702,9 +797,19 @@
                                     name: "profile-input",
                                     labelPosition: "top",
                                     disabled: true,
-                                    value: "/"+nameDirectory+"/",
-                                    label: "Appdev Directory"//,
-                                    // require:true
+                                    value: nameDirectory,
+                                    label: "Appdev Directory"
+                                  },
+                                  {
+                                    view: "textarea", 
+                                    height: 120,
+                                    width: 300,
+                                    id: "debug-path",
+                                    name: "debug-path",
+                                    labelPosition: "top",
+                                    value: "",
+                                    hidden: true,
+                                    label: "debug-path"
                                   }
                                 ],
                         rules: {
@@ -773,7 +878,8 @@
                         label: "Git :",
                         container:"appdevgui-verifyreq",
                         labelWidth: 80, 
-                        css: "verifyreq-input"
+                        css: "verifyreq-input",
+                        hidden: true
                     });
                     webix.ui({
                         view: "text", 
@@ -849,7 +955,7 @@
                         width: 200,
                         type: "prev",
                         label: "Back",
-                        disabled: true,
+                        // disabled: true,
                         id:"verifyreq-back",
                         on:{
                             "onItemClick": function(id, e, trg) {
