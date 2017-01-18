@@ -368,6 +368,33 @@
                     }
                 }
 
+                function install_sails (next) {
+                    if(needSails) {
+                        console.log('Install Sails');
+                        webix.message("Installing Sails");
+                        logger( "Installing Sails...");
+                        const install_sails_exec = require('child_process').exec;
+                        var cmd = paths.node + ' ' + paths.npm +' install sails -g';
+                        console.log(cmd);
+                        install_sails_exec(cmd, (error, stdout, stderr) => {
+                          if (error) {
+                            console.error(`exec error: ${error}`);
+                            logger("Please check error log:\n" +`${error}`);
+                            next(error);
+                            return;
+                          }
+                          console.log(`stdout: ${stdout}`);
+                          logger("Installed Sails Successful");
+
+                          // should update the sails path here:
+                          which_sails(next);
+                        });
+                    }
+                    else {
+                          next();
+                    }
+                }
+
 
                 function appdevdesigns_version_p (next) {
                     console.log('Check Appdev-designs version');
@@ -415,6 +442,30 @@
                     }
                 }
 
+                function install_appdevdesigns (next) {
+                    if (needAppdev) {
+                        console.log('install Appdev-designs');
+                        webix.message("Installing Appdev-designs");
+                        logger("Installing Appdev-design...");
+                        const install_appdevdesigns_exec = require('child_process').exec;
+                        var cmd = paths.node +' '+ paths.npm + ' install appdevdesigns/appdev-cli -g';
+                        install_appdevdesigns_exec(cmd, (error, stdout, stderr) => {
+                          if (error) {
+                            console.error(`exec error: ${error}`);
+                            next(error);
+                            return;
+                          }
+                          console.log(`stdout: ${stdout}`);
+                          logger("Installed Appdev-design Successful");
+
+                          // update the path to appdev
+                          which_appdev(next);
+                        });
+                    } 
+                    else {
+                        next();
+                    }
+                }
 
                 function create_appdev_s(next) {
                     var fs = require('fs');
