@@ -94,7 +94,6 @@
                             $("#appdevgui-profile-component").show();
                             checkOS();
                             makeNPMPrefix();
-                            // setEnvironment();
                             // checkEnvironment();
 
                             detectPaths(function(err){
@@ -264,18 +263,21 @@
                         which_sails,
                         which_npm,
                         which_appdev
-                    ], function(err,results){
+                    ], function(err, results){
 
 // TODO: how do you handle missing paths here?
+                        if (current_os == "darwin") {
+                            os_path = "";
+                        };
+                        async.parallel([
+                            which_sails_NPMGlobal,
+                            which_appdev_NPMGlobal
+                        ], function(err, results){
 
-// For OSX
-                        // paths.node = "/usr/local/bin/node";
-                        // paths.sails = "/usr/local/bin/sails";
-                        // paths.appdev = "/usr/local/bin/appdev";
-                        // paths.npms = "/usr/local/bin/npm";
+                        })
 
                     })
-                }
+                }                
 
                 function checkOS() {
                     current_os = require('os').platform();
@@ -287,14 +289,14 @@
                     const env_exec = require('child_process').exec;
                     env_exec('mkdir ~/.npm-global', (error, stdout, stderr) => {
                       if (error) {
-                        // webix.message("Error Make NPM");
                         logger(error);
+                        setEnvironment();
                         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
                         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
                         return;
                       }
-                      // webix.message(stdout);
                       $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
+                      setEnvironment();
                       console.log(stdout);
                     });
                 }
@@ -318,38 +320,33 @@
                     });
                 }
 
-                // function setEnvironment() {
-                //     webix.message("Set Environment");
-                //     const env_exec = require('child_process').exec;
-                //     env_exec('export NPM_CONFIG_PREFIX=~/.npm-global', (error, stdout, stderr) => {
-                //       if (error) {
-                //         webix.message("Error Set Environment");
-                //         logger(error);
-                //         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
-                //         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
-                //         return;
-                //       }
-                //       webix.message("Great!");
-                //       webix.message(stdout);
-                //       $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
-                //       console.log(stdout);
-                //       checkEnvironment();
-                //     });
-                // }
+                function setEnvironment() {
+                    webix.message("Set Environment");
+                    const env_exec = require('child_process').exec;
+                    env_exec('PATH=$PATH:~/.npm-global/bin', (error, stdout, stderr) => {
+                      if (error) {
+                        // webix.message("Error Set Environment");
+                        logger(error);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
+                        $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
+                        return;
+                      }
+                      $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
+                      console.log(stdout);
+                      checkEnvironment();
+                    });
+                }
 
                 function checkEnvironment() {
                     // webix.message("Check Environment");
                     const env_exec = require('child_process').exec;
                     env_exec('env', (error, stdout, stderr) => {
                       if (error) {
-                        // webix.message("Error");
                         logger(error);
                         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stderr);
                         $$('debug-path').setValue($$('debug-path').getValue() + "\n"+error);
                         return;
                       }
-                      // webix.message("Great!");
-                      // webix.message(stdout);
                       $$('debug-path').setValue($$('debug-path').getValue() + "\n"+stdout);
                       console.log(stdout);
                     });
@@ -382,49 +379,70 @@
                  * @param {string} command  the command to search for
                  * @param {fn} cb  a node style callback for the completion
                  */
-                function whichCommand(command, cb) {
+                function whichCommand(command, cb, isglobal) {
                     // webix.message(command);
                     console.log('which '+command);
                     const which_exec = require('child_process').exec;
-                    which_exec('which '+ os_path + command, (error, stdout, stderr) => {
+                    var commandString = 'which '+ os_path + command;
+                    if (isglobal) {
+                        commandString = 'which ~/.npm-global/bin/' + command;
+                    };
+                    which_exec(commandString, (error, stdout, stderr) => {
                       if (error) {
-                        logger("which " + os_path + command + " returned an error:");
+                        logger(commandString + " returned an error:");
                         logger(error);
                         cb(error);
                         return;
                       }
                       //Remove Newline
                       var cleanPath = stdout.replace(/(\r\n|\n|\r)/gm,"");
-                      logger("which "+command+": "+cleanPath);
+                      logger(commandString);
                       paths[command] = cleanPath;
                       cb(null, cleanPath);
                     });
                 }
 
                 function which_node(cb) {
-                    whichCommand('node', cb);
+                    whichCommand('node', cb, false);
                 }
 
                 function which_sails(cb) {
-                    whichCommand('sails', cb);
+                    whichCommand('sails', cb, false);
                 }
 
                 function which_npm(cb) {
-                    whichCommand('npm', cb);
+                    whichCommand('npm', cb, false);
                 }
 
                 function which_appdev(cb) {
-                    whichCommand('appdev', cb);
+                    whichCommand('appdev', cb, false);
+                }                
+
+                function which_sails_NPMGlobal(cb) {
+                    logger("which sails Global");
+                    whichCommand('sails', cb, true);
+                }
+
+                function which_appdev_NPMGlobal(cb) {
+                    logger("which appdev Global");
+                    whichCommand('appdev', cb, true);
                 }
 
                 function update_sails_path(cb) {
-                    path.sails = npm_prefix + path.node + "bin/sails";
-                    install_appdevdesigns();
+                    async.series([
+                            which_sails_NPMGlobal,
+                            install_appdevdesigns
+                        ], function(err, res){
+                    });
                 }
 
                 function update_appdev_path(cb) {
-                    path.appdev = npm_prefix + path.node + "bin/appdev";
-                    create_appdev_s();
+                    logger("update appdev path");
+                    async.series([
+                            which_appdev_NPMGlobal,
+                            create_appdev_s
+                        ], function(err, res){
+                    });
                 }
 
 
@@ -650,28 +668,51 @@
                             })
                         },
 
-                        function runInstallCommand(cb){
-                            
-                            // change to the install directory
+                        function runInstallCommand(cb) {
+                            logger("Creating Appdev");
                             process.chdir(installDir);
-
-                            // run the command.
-                            AD.spawn.command({
-                                command:'appdev',
-                                options:[ 'install', nameDirectory, '--develop', 'settings:settings.js' ],
-                                shouldEcho:false,
-                                onData:logger
-                            })
-                            .fail(function(err){
-                                logger('Error running appdev install:'+err);
-                                console.error(err);
-                                cb(err);
-                            })
-                            .then(function(){
-                                cb();
-                            })
-
+                            const create_appdeve_exec = require('child_process').exec;
+                            var cmd = 'PATH=$PATH:~/.npm-global/bin ; appdev install ' + nameDirectory + ' —-develop settings:settings.js';
+                            create_appdeve_exec(cmd, (error, stdout, stderr) => {
+                              if (error) {
+                                console.error(`exec error: ${error}`);
+                                cb(error);
+                                return;
+                              }
+                              console.log(`stdout: ${stdout}`);
+                              logger(`${stdout}`);
+                              logger("Create Appdev Sails Application Successful");
+                              cb();
+                            });
                         }
+
+
+                        // function runInstallCommand(cb){
+                            
+                        //     // change to the install directory
+                        //     process.chdir(installDir);
+                        //     // logger(paths.appdev);
+                        //     var cmd = "PATH=$PATH:~/.npm-global/bin ; " + paths.appdev;
+
+
+                        //     // run the command.
+                        //     AD.spawn.command({
+                        //         command:cmd,
+                        //         options:[ 'install', nameDirectory, '--develop', 'settings:settings.js' ],
+                        //         shouldEcho:false,
+                        //         onData:logger
+                        //     })
+                        //     .fail(function(err){
+                        //         logger('Error running appdev install:'+err);
+                        //         console.error(err);
+                        //         cb(err);
+                        //     })
+                        //     .then(function(){
+                        //         cb();
+                        //     })
+
+                        // }
+
                     ], function(err, res){
 
                         // return us to the proper directory.
@@ -682,12 +723,32 @@
                     
                 }
 
+                function install_appbuilder(next) {
+
+                    logger("Install Appbuilder");
+                    const install_appbuilder_exec = require('child_process').exec;
+                    var cmd = 'cd ' + toInstallLocation(nameDirectory)+ '&& npm install --save appdevdesigns/app_builder';
+                    install_appbuilder_exec(cmd, (error, stdout, stderr) => {
+                        if (error) {
+                            console.error(`exec error: ${error}`);
+                            logger("Error install Appbuilder");
+                            next();
+                            return;
+                        }
+                        console.log(`stdout: ${stdout}`);
+                        logger(`${stdout}`);
+                        logger("Install Appbuilder Successful");
+                        next();
+                    });
+
+
+                }
 
                 function sails_lift_s(next) {
                     console.log('Sails Lift');
                     webix.message("Trying Sails Lift");
                     const sails_lift_exec = require('child_process').exec;
-                    var cmd = 'cd '+toInstallLocation(nameDirectory)+' && '+ paths.node + ' ' + paths.sails + ' lift';
+                    var cmd = paths.node + ' ' + paths.sails + ' lift';
                     var child = sails_lift_exec(cmd);
                     child.stdout.on('data', function(data) {
                       // logger(data);
@@ -723,7 +784,7 @@
                     console.log('Sails Lift');
                     webix.message("Trying Sails Lift");
                     const sails_lift_exec = require('child_process').exec;
-                    var cmd = 'cd '+toInstallLocation(nameDirectory)+' && '+ npm_prefix + paths.node + ' ' + paths.sails + ' lift';
+                    var cmd = 'cd '+toInstallLocation(nameDirectory)+' && ' + paths.sails + ' lift';
                     var child = sails_lift_exec(cmd);
                     child.stdout.on('data', function(data) {
                       // logger(data);
@@ -1211,7 +1272,8 @@
                                     name: "installer-input",
                                     labelPosition: "top",
                                     label: "Root password",
-                                    require: true
+                                    hidden: true
+                                    // require: true
                                   },
                                   {
                                     view:"button",
@@ -1234,10 +1296,11 @@
                                                 
                                                 async.series([
 
-                                                    install_sails_s,
-                                                    install_appdevdesigns_s,
+                                                    install_sails,
+                                                    install_appdevdesigns,
                                                     create_appdev_s,
-                                                    sails_lift_s
+                                                    install_appbuilder,
+                                                    sails_lift
 
                                                 ], function(err, res){
 
