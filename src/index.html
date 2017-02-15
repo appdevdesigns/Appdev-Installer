@@ -74,6 +74,15 @@
 
                 // logger:  a common logging function.
                 function logger(value) {
+
+                    // if this is a string then clean it up:
+                    if (value.replace) {
+                        var ignore = ['[33m', '[39m', '[32m', '[1m', '[22m', '[33m', '[39m', '[32m', '[1m', '[22m'];
+                        ignore.forEach(function(v){
+                            value = value.replace(v,'');
+                        })
+                    }
+
                     console.log(value);
                     $$('installer-log').setValue($$('installer-log').getValue() + "\n"+value);
                 }
@@ -254,9 +263,19 @@
                  * @param {fn} cb  a node style callback when finished.
                  */
                 function detectPaths(cb) {
-                    if (current_os == "darwin") {
-                        os_path = "/usr/local/bin/";
-                    };
+
+// NOTE: this is not always true in all installations.  For example, I'm using
+// NVM to manage which version of nodeJS I'm running.  :
+// now their path will be stored under which version of node that is installed.
+// it looks like:  
+// $ which sails
+// /Users/[mydir]/.nvm/versions/node/v6.9.1/bin/sails 
+//
+// so I have to comment this out to get it to run on my system:
+
+                    // if (current_os == "darwin") {
+                    //     os_path = "/usr/local/bin/";
+                    // };
 
                     async.parallel([
                         which_node,
@@ -417,7 +436,8 @@
                 function which_appdev(cb) {
                     whichCommand('appdev', cb, false);
                 }                
-
+// Question: why have 2 versions of which_sails and which_appdev?
+// 
                 function which_sails_NPMGlobal(cb) {
                     logger("which sails Global");
                     whichCommand('sails', cb, true);
@@ -672,18 +692,36 @@
                             logger("Creating Appdev");
                             process.chdir(installDir);
                             const create_appdeve_exec = require('child_process').exec;
-                            var cmd = 'PATH=$PATH:~/.npm-global/bin ; appdev install ' + nameDirectory + ' —-develop settings:settings.js';
-                            create_appdeve_exec(cmd, (error, stdout, stderr) => {
-                              if (error) {
-                                console.error(`exec error: ${error}`);
-                                cb(error);
-                                return;
-                              }
-                              console.log(`stdout: ${stdout}`);
-                              logger(`${stdout}`);
-                              logger("Create Appdev Sails Application Successful");
-                              cb();
-                            });
+                            var cmd = 'PATH=$PATH:~/.npm-global/bin ; appdev install ' + nameDirectory + ' --develop settings:settings.js';
+
+
+                            // create_appdeve_exec(cmd, (error, stdout, stderr) => {
+                            //   if (error) {
+                            //     console.error(`exec error: ${error}`);
+                            //     cb(error);
+                            //     return;
+                            //   }
+                            //   console.log(`stdout: ${stdout}`);
+                            //   logger(`${stdout}`);
+                            //   logger("Create Appdev Sails Application Successful");
+                            //   cb();
+                            // });
+
+// NOTE: this process takes too long without seeing any feedback to the user.
+// we need a way to show a progress bar or something that indicates work is being done.
+// this will update the text in the box, but maybe we could wait for some key steps and
+// update a progress bar along the way?
+
+                            var child = create_appdeve_exec(cmd);
+                            child.stdout.on('data', logger);
+                            child.stderr.on('data', logger);
+                            child.on('close', function(code){
+                                logger('Creating Sails Application finished.');
+                                cb();
+                            })
+
+
+
                         }
 
 
